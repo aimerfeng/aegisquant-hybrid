@@ -1,9 +1,15 @@
 <Application x:Class="AegisQuant.UI.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             StartupUri="Views/MainWindow.xaml">
+             StartupUri="Views/MainWindow.xaml"
+             Startup="Application_Startup">
     <Application.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Default language (will be replaced at runtime) -->
+                <ResourceDictionary Source="Resources/Strings.en-US.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            
             <!-- Application-wide styles -->
             <Style TargetType="Button">
                 <Setter Property="Padding" Value="12,6"/>

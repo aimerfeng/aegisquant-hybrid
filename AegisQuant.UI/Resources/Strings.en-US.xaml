@@ -1,0 +1,89 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    
+    <!-- Window Title -->
+    <system:String x:Key="AppTitle">AegisQuant - Quantitative Backtesting System</system:String>
+    
+    <!-- Toolbar -->
+    <system:String x:Key="LoadData">Load Data</system:String>
+    <system:String x:Key="Start">Start</system:String>
+    <system:String x:Key="Stop">Stop</system:String>
+    <system:String x:Key="Optimize">Optimize</system:String>
+    <system:String x:Key="Progress">Progress:</system:String>
+    <system:String x:Key="Settings">Settings</system:String>
+    
+    <!-- Strategy Parameters -->
+    <system:String x:Key="StrategyParameters">Strategy Parameters</system:String>
+    <system:String x:Key="ShortMaPeriod">Short MA Period:</system:String>
+    <system:String x:Key="LongMaPeriod">Long MA Period:</system:String>
+    <system:String x:Key="PositionSize">Position Size:</system:String>
+    <system:String x:Key="StopLossPct">Stop Loss %:</system:String>
+    <system:String x:Key="TakeProfitPct">Take Profit %:</system:String>
+    
+    <!-- Risk Configuration -->
+    <system:String x:Key="RiskConfiguration">Risk Configuration</system:String>
+    <system:String x:Key="MaxOrderRate">Max Order Rate:</system:String>
+    <system:String x:Key="MaxPosition">Max Position:</system:String>
+    <system:String x:Key="MaxOrderValue">Max Order Value:</system:String>
+    <system:String x:Key="MaxDrawdownPct">Max Drawdown %:</system:String>
+    
+    <!-- Data Information -->
+    <system:String x:Key="DataInformation">Data Information</system:String>
+    <system:String x:Key="TotalTicks">Total Ticks:</system:String>
+    <system:String x:Key="ValidTicks">Valid Ticks:</system:String>
+    <system:String x:Key="InvalidTicks">Invalid Ticks:</system:String>
+    <system:String x:Key="AnomalyTicks">Anomaly Ticks:</system:String>
+    
+    <!-- Chart -->
+    <system:String x:Key="ChartPlaceholder">Load data and run backtest to see equity curve</system:String>
+    
+    <!-- Metrics -->
+    <system:String x:Key="Balance">Balance</system:String>
+    <system:String x:Key="Equity">Equity</system:String>
+    <system:String x:Key="TotalReturn">Total Return</system:String>
+    <system:String x:Key="MaxDrawdown">Max Drawdown</system:String>
+    <system:String x:Key="Positions">Positions</system:String>
+    
+    <!-- Log -->
+    <system:String x:Key="Log">Log</system:String>
+    <system:String x:Key="Clear">Clear</system:String>
+    <system:String x:Key="Export">Export</system:String>
+    
+    <!-- Status Bar -->
+    <system:String x:Key="Running">Running:</system:String>
+    
+    <!-- Settings Dialog -->
+    <system:String x:Key="SettingsTitle">Settings</system:String>
+    <system:String x:Key="Language">Language:</system:String>
+    <system:String x:Key="English">English</system:String>
+    <system:String x:Key="Chinese">中文</system:String>
+    <system:String x:Key="OK">OK</system:String>
+    <system:String x:Key="Cancel">Cancel</system:String>
+    
+    <!-- Tooltips -->
+    <system:String x:Key="LoadDataTooltip">Load Data File</system:String>
+    <system:String x:Key="StartTooltip">Start Backtest</system:String>
+    <system:String x:Key="StopTooltip">Stop Backtest</system:String>
+    <system:String x:Key="OptimizeTooltip">Parameter Optimization</system:String>
+    <system:String x:Key="SettingsTooltip">Application Settings</system:String>
+    
+    <!-- Optimization Window -->
+    <system:String x:Key="OptimizationTitle">Parameter Optimization</system:String>
+    <system:String x:Key="ParameterRanges">Parameter Ranges</system:String>
+    <system:String x:Key="ShortMaRange">Short MA Range:</system:String>
+    <system:String x:Key="LongMaRange">Long MA Range:</system:String>
+    <system:String x:Key="From">From:</system:String>
+    <system:String x:Key="To">To:</system:String>
+    <system:String x:Key="Step">Step:</system:String>
+    <system:String x:Key="StartOptimization">Start Optimization</system:String>
+    <system:String x:Key="StopOptimization">Stop</system:String>
+    <system:String x:Key="Results">Results</system:String>
+    <system:String x:Key="ShortMA">Short MA</system:String>
+    <system:String x:Key="LongMA">Long MA</system:String>
+    <system:String x:Key="SharpeRatio">Sharpe Ratio</system:String>
+    <system:String x:Key="TotalReturnPct">Return %</system:String>
+    <system:String x:Key="MaxDrawdownPct">Drawdown %</system:String>
+    <system:String x:Key="Trades">Trades</system:String>
+    
+</ResourceDictionary>

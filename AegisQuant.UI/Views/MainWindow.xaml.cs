@@ -84,6 +84,15 @@ public partial class MainWindow : Window
         });
     }
 
+    private void SettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        var settingsWindow = new SettingsWindow
+        {
+            Owner = this
+        };
+        settingsWindow.ShowDialog();
+    }
+
     private void Window_Closing(object? sender, CancelEventArgs e)
     {
         // Clean up resources

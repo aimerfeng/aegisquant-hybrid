@@ -1,4 +1,5 @@
 using System.Windows;
+using AegisQuant.UI.Services;
 
 namespace AegisQuant.UI;
 
@@ -7,4 +8,9 @@ namespace AegisQuant.UI;
 /// </summary>
 public partial class App : Application
 {
+    private void Application_Startup(object sender, StartupEventArgs e)
+    {
+        // 初始化语言设置
+        LocalizationService.Initialize();
+    }
 }
