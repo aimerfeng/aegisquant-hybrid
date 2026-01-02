@@ -1,0 +1,378 @@
+<Window x:Class="AegisQuant.UI.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:AegisQuant.UI.ViewModels"
+        xmlns:converters="clr-namespace:AegisQuant.UI.Converters"
+        xmlns:interop="clr-namespace:AegisQuant.Interop;assembly=AegisQuant.Interop"
+        xmlns:scottplot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+        mc:Ignorable="d"
+        Title="AegisQuant - Quantitative Backtesting System" 
+        Height="900" Width="1400"
+        WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing">
+    
+    <Window.DataContext>
+        <vm:MainViewModel/>
+    </Window.DataContext>
+    
+    <Window.Resources>
+        <!-- Converters -->
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+        <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisConverter"/>
+        <converters:IsNegativeConverter x:Key="IsNegativeConverter"/>
+        
+        <!-- Styles -->
+        <Style x:Key="HeaderText" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+        
+        <Style x:Key="MetricLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="Gray"/>
+        </Style>
+        
+        <Style x:Key="MetricValue" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+    </Window.Resources>
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Toolbar -->
+        <ToolBarTray Grid.Row="0" Background="#F5F5F5">
+            <ToolBar Band="0" BandIndex="0">
+                <Button Command="{Binding LoadDataCommand}" ToolTip="Load Data File">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="📂" FontSize="16" Margin="0,0,4,0"/>
+                        <TextBlock Text="Load Data" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Separator/>
+                <Button Command="{Binding StartBacktestCommand}" ToolTip="Start Backtest">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="▶" FontSize="14" Foreground="Green" Margin="0,0,4,0"/>
+                        <TextBlock Text="Start" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Command="{Binding StopBacktestCommand}" ToolTip="Stop Backtest">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="⏹" FontSize="14" Foreground="Red" Margin="0,0,4,0"/>
+                        <TextBlock Text="Stop" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Separator/>
+                <Button Command="{Binding OpenOptimizationCommand}" ToolTip="Parameter Optimization">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="⚙" FontSize="14" Margin="0,0,4,0"/>
+                        <TextBlock Text="Optimize" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Separator/>
+                <TextBlock Text="Progress:" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                <ProgressBar Width="150" Height="18" 
+                             Value="{Binding Progress}" 
+                             Minimum="0" Maximum="100"/>
+                <TextBlock Text="{Binding Progress, StringFormat={}{0:F1}%}" 
+                           VerticalAlignment="Center" Margin="4,0,0,0"/>
+            </ToolBar>
+        </ToolBarTray>
+        
+        <!-- Main Content -->
+        <Grid Grid.Row="1" Margin="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="300"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- Left Panel - Parameters -->
+            <Border Grid.Column="0" BorderBrush="#DDD" BorderThickness="1" 
+                    CornerRadius="4" Margin="0,0,8,0" Padding="12">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <!-- Strategy Parameters -->
+                        <TextBlock Text="Strategy Parameters" Style="{StaticResource HeaderText}"/>
+                        
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            
+                            <Label Grid.Row="0" Content="Short MA Period:"/>
+                            <TextBox Grid.Row="0" Grid.Column="1" 
+                                     Text="{Binding ShortMaPeriod, UpdateSourceTrigger=PropertyChanged}"
+                                     IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                            
+                            <Label Grid.Row="1" Content="Long MA Period:"/>
+                            <TextBox Grid.Row="1" Grid.Column="1" 
+                                     Text="{Binding LongMaPeriod, UpdateSourceTrigger=PropertyChanged}"
+                                     IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                            
+                            <Label Grid.Row="2" Content="Position Size:"/>
+                            <TextBox Grid.Row="2" Grid.Column="1" 
+                                     Text="{Binding PositionSize, UpdateSourceTrigger=PropertyChanged}"
+                                     IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                            
+                            <Label Grid.Row="3" Content="Stop Loss %:"/>
+                            <TextBox Grid.Row="3" Grid.Column="1" 
+                                     Text="{Binding StopLossPct, UpdateSourceTrigger=PropertyChanged}"
+                                     IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                            
+                            <Label Grid.Row="4" Content="Take Profit %:"/>
+                            <TextBox Grid.Row="4" Grid.Column="1" 
+                                     Text="{Binding TakeProfitPct, UpdateSourceTrigger=PropertyChanged}"
+                                     IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                        </Grid>
+                        
+                        <!-- Risk Configuration -->
+                        <TextBlock Text="Risk Configuration" Style="{StaticResource HeaderText}"/>
+                        
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            
+                            <Label Grid.Row="0" Content="Max Order Rate:"/>
+                            <TextBox Grid.Row="0" Grid.Column="1" 
+                                     Text="{Binding MaxOrderRate, UpdateSourceTrigger=PropertyChanged}"
+                                     IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                            
+                            <Label Grid.Row="1" Content="Max Position:"/>
+                            <TextBox Grid.Row="1" Grid.Column="1" 
+                                     Text="{Binding MaxPositionSize, UpdateSourceTrigger=PropertyChanged}"
+                                     IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                            
+                            <Label Grid.Row="2" Content="Max Order Value:"/>
+                            <TextBox Grid.Row="2" Grid.Column="1" 
+                                     Text="{Binding MaxOrderValue, UpdateSourceTrigger=PropertyChanged}"
+                                     IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                            
+                            <Label Grid.Row="3" Content="Max Drawdown %:"/>
+                            <TextBox Grid.Row="3" Grid.Column="1" 
+                                     Text="{Binding MaxDrawdownPct, UpdateSourceTrigger=PropertyChanged}"
+                                     IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                        </Grid>
+                        
+                        <!-- Data Info -->
+                        <TextBlock Text="Data Information" Style="{StaticResource HeaderText}"/>
+                        <TextBlock Text="{Binding DataFilePath}" TextWrapping="Wrap" 
+                                   Foreground="Gray" FontSize="11" Margin="0,0,0,8"/>
+                        
+                        <StackPanel Visibility="{Binding IsDataLoaded, Converter={StaticResource BoolToVis}}">
+                            <TextBlock>
+                                <Run Text="Total Ticks: "/>
+                                <Run Text="{Binding DataQualityReport.TotalTicks, StringFormat=N0, Mode=OneWay}"/>
+                            </TextBlock>
+                            <TextBlock>
+                                <Run Text="Valid Ticks: "/>
+                                <Run Text="{Binding DataQualityReport.ValidTicks, StringFormat=N0, Mode=OneWay}"/>
+                            </TextBlock>
+                            <TextBlock>
+                                <Run Text="Invalid Ticks: "/>
+                                <Run Text="{Binding DataQualityReport.InvalidTicks, StringFormat=N0, Mode=OneWay}"/>
+                            </TextBlock>
+                            <TextBlock>
+                                <Run Text="Anomaly Ticks: "/>
+                                <Run Text="{Binding DataQualityReport.AnomalyTicks, StringFormat=N0, Mode=OneWay}"/>
+                            </TextBlock>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+            
+            <!-- Center Panel - Chart -->
+            <Grid Grid.Column="1" Margin="0,0,8,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
+                <!-- Equity Chart -->
+                <Border Grid.Row="0" BorderBrush="#DDD" BorderThickness="1" CornerRadius="4">
+                    <Grid>
+                        <scottplot:WpfPlot x:Name="EquityChart" Margin="4"/>
+                        
+                        <!-- Overlay for no data -->
+                        <TextBlock Text="Load data and run backtest to see equity curve"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Foreground="Gray" FontSize="14"
+                                   Visibility="{Binding IsDataLoaded, Converter={StaticResource InverseBoolToVisConverter}}"/>
+                    </Grid>
+                </Border>
+                
+                <!-- Key Metrics -->
+                <Border Grid.Row="1" BorderBrush="#DDD" BorderThickness="1" 
+                        CornerRadius="4" Margin="0,8,0,0" Padding="16,12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                            <TextBlock Text="Balance" Style="{StaticResource MetricLabel}"/>
+                            <TextBlock Text="{Binding CurrentStatus.Balance, StringFormat=C2}" 
+                                       Style="{StaticResource MetricValue}"/>
+                        </StackPanel>
+                        
+                        <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                            <TextBlock Text="Equity" Style="{StaticResource MetricLabel}"/>
+                            <TextBlock Text="{Binding CurrentStatus.Equity, StringFormat=C2}" 
+                                       Style="{StaticResource MetricValue}"/>
+                        </StackPanel>
+                        
+                        <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                            <TextBlock Text="Total Return" Style="{StaticResource MetricLabel}"/>
+                            <TextBlock Text="{Binding TotalReturnPct, StringFormat={}{0:F2}%}" 
+                                       Style="{StaticResource MetricValue}" Foreground="Green"/>
+                        </StackPanel>
+                        
+                        <StackPanel Grid.Column="3" HorizontalAlignment="Center">
+                            <TextBlock Text="Max Drawdown" Style="{StaticResource MetricLabel}"/>
+                            <TextBlock Text="{Binding MaxDrawdown, StringFormat={}{0:F2}%}" 
+                                       Style="{StaticResource MetricValue}" Foreground="OrangeRed"/>
+                        </StackPanel>
+                        
+                        <StackPanel Grid.Column="4" HorizontalAlignment="Center">
+                            <TextBlock Text="Positions" Style="{StaticResource MetricLabel}"/>
+                            <TextBlock Text="{Binding CurrentStatus.PositionCount}" 
+                                       Style="{StaticResource MetricValue}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+            
+            <!-- Right Panel - Log -->
+            <Border Grid.Column="2" BorderBrush="#DDD" BorderThickness="1" 
+                    CornerRadius="4" Padding="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Log Header -->
+                    <Grid Grid.Row="0" Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <TextBlock Text="Log" Style="{StaticResource HeaderText}" Margin="0"/>
+                        
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <ComboBox Width="80" Margin="0,0,4,0"
+                                      SelectedItem="{Binding SelectedLogLevel}">
+                                <ComboBox.ItemsSource>
+                                    <x:Array Type="interop:LogLevel">
+                                        <interop:LogLevel>Trace</interop:LogLevel>
+                                        <interop:LogLevel>Debug</interop:LogLevel>
+                                        <interop:LogLevel>Info</interop:LogLevel>
+                                        <interop:LogLevel>Warn</interop:LogLevel>
+                                        <interop:LogLevel>Error</interop:LogLevel>
+                                    </x:Array>
+                                </ComboBox.ItemsSource>
+                            </ComboBox>
+                        </StackPanel>
+                    </Grid>
+                    
+                    <!-- Log List -->
+                    <ListView Grid.Row="1" ItemsSource="{Binding LogEntries}"
+                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                              BorderThickness="0">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="70"/>
+                                        <ColumnDefinition Width="50"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <TextBlock Grid.Column="0" Text="{Binding FormattedTime}" 
+                                               FontSize="10" Foreground="Gray"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding LevelString}" 
+                                               FontSize="10" FontWeight="Bold">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Level}" Value="Error">
+                                                        <Setter Property="Foreground" Value="Red"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Level}" Value="Warn">
+                                                        <Setter Property="Foreground" Value="Orange"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Level}" Value="Info">
+                                                        <Setter Property="Foreground" Value="Blue"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Level}" Value="Debug">
+                                                        <Setter Property="Foreground" Value="Gray"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <TextBlock Grid.Column="2" Text="{Binding Message}" 
+                                               TextWrapping="Wrap" FontSize="11"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                    
+                    <!-- Log Actions -->
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" 
+                                HorizontalAlignment="Right" Margin="0,8,0,0">
+                        <Button Content="Clear" Command="{Binding ClearLogCommand}" 
+                                Padding="8,4" Margin="0,0,4,0"/>
+                        <Button Content="Export" Command="{Binding ExportLogCommand}" 
+                                Padding="8,4"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+        
+        <!-- Status Bar -->
+        <StatusBar Grid.Row="2">
+            <StatusBarItem>
+                <TextBlock Text="{Binding StatusMessage}"/>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem>
+                <TextBlock>
+                    <Run Text="Running: "/>
+                    <Run Text="{Binding IsRunning, Mode=OneWay}"/>
+                </TextBlock>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>

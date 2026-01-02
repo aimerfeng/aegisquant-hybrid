@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon></ApplicationIcon>
+    <StartupObject>AegisQuant.UI.App</StartupObject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- MVVM Framework -->
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+    
+    <!-- Charting Library -->
+    <PackageReference Include="ScottPlot.WPF" Version="5.0.39" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Reference to Interop layer -->
+    <ProjectReference Include="..\AegisQuant.Interop\AegisQuant.Interop.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,458 @@
+using System.Collections.ObjectModel;
+using System.Windows;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using AegisQuant.Interop;
+using AegisQuant.UI.Models;
+
+namespace AegisQuant.UI.ViewModels;
+
+/// <summary>
+/// Log entry for display in the UI.
+/// </summary>
+public class LogEntry
+{
+    public DateTime Timestamp { get; set; }
+    public LogLevel Level { get; set; }
+    public string Message { get; set; } = string.Empty;
+
+    public string LevelString => Level.ToString().ToUpper();
+    public string FormattedTime => Timestamp.ToString("HH:mm:ss.fff");
+}
+
+/// <summary>
+/// Main view model for the application.
+/// Implements MVVM pattern with CommunityToolkit.Mvvm.
+/// </summary>
+public partial class MainViewModel : ObservableObject, IDisposable
+{
+    private readonly BacktestService _backtestService;
+    private bool _disposed;
+
+    #region Observable Properties
+
+    /// <summary>
+    /// Equity curve data points for charting.
+    /// </summary>
+    [ObservableProperty]
+    private ObservableCollection<double> _equityCurve = new();
+
+    /// <summary>
+    /// Current account status from the engine.
+    /// </summary>
+    [ObservableProperty]
+    private AccountStatus _currentStatus;
+
+    /// <summary>
+    /// Backtest progress (0-100).
+    /// </summary>
+    [ObservableProperty]
+    private double _progress;
+
+    /// <summary>
+    /// Whether a backtest is currently running.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isRunning;
+
+    /// <summary>
+    /// Whether data has been loaded.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isDataLoaded;
+
+    /// <summary>
+    /// Path to the loaded data file.
+    /// </summary>
+    [ObservableProperty]
+    private string _dataFilePath = string.Empty;
+
+    /// <summary>
+    /// Status message displayed in the status bar.
+    /// </summary>
+    [ObservableProperty]
+    private string _statusMessage = "Ready";
+
+    /// <summary>
+    /// Data quality report from the last load.
+    /// </summary>
+    [ObservableProperty]
+    private DataQualityReport? _dataQualityReport;
+
+    /// <summary>
+    /// Log entries for display.
+    /// </summary>
+    [ObservableProperty]
+    private ObservableCollection<LogEntry> _logEntries = new();
+
+    /// <summary>
+    /// Selected log level filter.
+    /// </summary>
+    [ObservableProperty]
+    private LogLevel _selectedLogLevel = LogLevel.Info;
+
+    #endregion
+
+    #region Strategy Parameters
+
+    [ObservableProperty]
+    private int _shortMaPeriod = 5;
+
+    [ObservableProperty]
+    private int _longMaPeriod = 20;
+
+    [ObservableProperty]
+    private double _positionSize = 100.0;
+
+    [ObservableProperty]
+    private double _stopLossPct = 2.0;
+
+    [ObservableProperty]
+    private double _takeProfitPct = 5.0;
+
+    #endregion
+
+    #region Risk Configuration
+
+    [ObservableProperty]
+    private int _maxOrderRate = 10;
+
+    [ObservableProperty]
+    private double _maxPositionSize = 1000.0;
+
+    [ObservableProperty]
+    private double _maxOrderValue = 100000.0;
+
+    [ObservableProperty]
+    private double _maxDrawdownPct = 10.0;
+
+    #endregion
+
+    #region Computed Properties
+
+    /// <summary>
+    /// Total return percentage.
+    /// </summary>
+    public double TotalReturnPct => CurrentStatus.Equity > 0
+        ? ((CurrentStatus.Equity - 100000) / 100000) * 100
+        : 0;
+
+    /// <summary>
+    /// Maximum drawdown (tracked separately).
+    /// </summary>
+    [ObservableProperty]
+    private double _maxDrawdown;
+
+    /// <summary>
+    /// Peak equity for drawdown calculation.
+    /// </summary>
+    private double _peakEquity;
+
+    #endregion
+
+    public MainViewModel()
+    {
+        _backtestService = new BacktestService();
+
+        // Subscribe to service events
+        _backtestService.OnStatusUpdated += OnStatusUpdated;
+        _backtestService.OnLogReceived += OnLogReceived;
+        _backtestService.OnBacktestCompleted += OnBacktestCompleted;
+
+        // Initialize with default parameters
+        InitializeEngine();
+    }
+
+    private void InitializeEngine()
+    {
+        try
+        {
+            var strategyParams = new StrategyParams
+            {
+                ShortMaPeriod = ShortMaPeriod,
+                LongMaPeriod = LongMaPeriod,
+                PositionSize = PositionSize,
+                StopLossPct = StopLossPct / 100.0,
+                TakeProfitPct = TakeProfitPct / 100.0
+            };
+
+            var riskConfig = new RiskConfig
+            {
+                MaxOrderRate = MaxOrderRate,
+                MaxPositionSize = MaxPositionSize,
+                MaxOrderValue = MaxOrderValue,
+                MaxDrawdownPct = MaxDrawdownPct / 100.0
+            };
+
+            _backtestService.Initialize(strategyParams, riskConfig);
+            StatusMessage = "Engine initialized";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Failed to initialize engine: {ex.Message}";
+            AddLog(LogLevel.Error, $"Engine initialization failed: {ex.Message}");
+        }
+    }
+
+    #region Commands
+
+    /// <summary>
+    /// Command to load data from a file.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanLoadData))]
+    private async Task LoadDataAsync()
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Filter = "Data Files (*.csv;*.parquet)|*.csv;*.parquet|CSV Files (*.csv)|*.csv|Parquet Files (*.parquet)|*.parquet|All Files (*.*)|*.*",
+            Title = "Select Data File"
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            try
+            {
+                StatusMessage = "Loading data...";
+                DataFilePath = dialog.FileName;
+
+                var report = await _backtestService.LoadDataAsync(dialog.FileName);
+
+                DataQualityReport = report;
+                IsDataLoaded = true;
+                StatusMessage = $"Loaded {report.ValidTicks:N0} ticks from {System.IO.Path.GetFileName(dialog.FileName)}";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Failed to load data: {ex.Message}";
+                AddLog(LogLevel.Error, $"Data load failed: {ex.Message}");
+                IsDataLoaded = false;
+            }
+        }
+    }
+
+    private bool CanLoadData() => !IsRunning;
+
+    /// <summary>
+    /// Command to start the backtest.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanStartBacktest))]
+    private async Task StartBacktestAsync()
+    {
+        try
+        {
+            // Re-initialize engine with current parameters
+            InitializeEngine();
+
+            // Reload data if needed
+            if (!string.IsNullOrEmpty(DataFilePath))
+            {
+                await _backtestService.LoadDataAsync(DataFilePath);
+            }
+
+            // Clear previous results
+            EquityCurve.Clear();
+            _peakEquity = 0;
+            MaxDrawdown = 0;
+            Progress = 0;
+
+            IsRunning = true;
+            StatusMessage = "Running backtest...";
+
+            await _backtestService.RunBacktestAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Backtest failed: {ex.Message}";
+            AddLog(LogLevel.Error, $"Backtest error: {ex.Message}");
+            IsRunning = false;
+        }
+    }
+
+    private bool CanStartBacktest() => IsDataLoaded && !IsRunning;
+
+    /// <summary>
+    /// Command to stop the running backtest.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanStopBacktest))]
+    private void StopBacktest()
+    {
+        _backtestService.StopBacktest();
+        StatusMessage = "Stopping backtest...";
+    }
+
+    private bool CanStopBacktest() => IsRunning;
+
+    /// <summary>
+    /// Command to clear the log.
+    /// </summary>
+    [RelayCommand]
+    private void ClearLog()
+    {
+        LogEntries.Clear();
+    }
+
+    /// <summary>
+    /// Command to open the optimization window.
+    /// </summary>
+    [RelayCommand]
+    private void OpenOptimization()
+    {
+        var window = new Views.OptimizationWindow();
+        window.Owner = Application.Current.MainWindow;
+        window.ShowDialog();
+    }
+
+    /// <summary>
+    /// Command to export log to file.
+    /// </summary>
+    [RelayCommand]
+    private void ExportLog()
+    {
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Filter = "Text Files (*.txt)|*.txt|CSV Files (*.csv)|*.csv|All Files (*.*)|*.*",
+            Title = "Export Log",
+            FileName = $"aegisquant_log_{DateTime.Now:yyyyMMdd_HHmmss}.txt"
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            try
+            {
+                var lines = LogEntries.Select(e => $"{e.FormattedTime} [{e.LevelString}] {e.Message}");
+                System.IO.File.WriteAllLines(dialog.FileName, lines);
+                StatusMessage = $"Log exported to {System.IO.Path.GetFileName(dialog.FileName)}";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Failed to export log: {ex.Message}";
+            }
+        }
+    }
+
+    #endregion
+
+    #region Event Handlers
+
+    private void OnStatusUpdated(object? sender, StatusUpdatedEventArgs e)
+    {
+        // Update on UI thread
+        Application.Current?.Dispatcher.Invoke(() =>
+        {
+            CurrentStatus = e.Status;
+            Progress = e.Progress;
+
+            // Update equity curve
+            EquityCurve.Add(e.Status.Equity);
+
+            // Update max drawdown
+            if (e.Status.Equity > _peakEquity)
+            {
+                _peakEquity = e.Status.Equity;
+            }
+
+            if (_peakEquity > 0)
+            {
+                var drawdown = (_peakEquity - e.Status.Equity) / _peakEquity * 100;
+                if (drawdown > MaxDrawdown)
+                {
+                    MaxDrawdown = drawdown;
+                }
+            }
+
+            OnPropertyChanged(nameof(TotalReturnPct));
+        });
+    }
+
+    private void OnLogReceived(object? sender, LogReceivedEventArgs e)
+    {
+        Application.Current?.Dispatcher.Invoke(() =>
+        {
+            AddLog(e.Level, e.Message);
+        });
+    }
+
+    private void OnBacktestCompleted(object? sender, BacktestCompletedEventArgs e)
+    {
+        Application.Current?.Dispatcher.Invoke(() =>
+        {
+            IsRunning = false;
+            Progress = 100;
+            CurrentStatus = e.FinalStatus;
+
+            // Add final equity point
+            EquityCurve.Add(e.FinalStatus.Equity);
+
+            if (e.Success)
+            {
+                StatusMessage = $"Backtest completed in {e.Duration.TotalSeconds:F2}s. Final equity: {e.FinalStatus.Equity:F2}";
+            }
+            else
+            {
+                StatusMessage = $"Backtest stopped: {e.ErrorMessage}";
+            }
+
+            OnPropertyChanged(nameof(TotalReturnPct));
+
+            // Update command states
+            LoadDataCommand.NotifyCanExecuteChanged();
+            StartBacktestCommand.NotifyCanExecuteChanged();
+            StopBacktestCommand.NotifyCanExecuteChanged();
+        });
+    }
+
+    private void AddLog(LogLevel level, string message)
+    {
+        // Filter by selected log level
+        if (level >= SelectedLogLevel)
+        {
+            LogEntries.Add(new LogEntry
+            {
+                Timestamp = DateTime.Now,
+                Level = level,
+                Message = message
+            });
+
+            // Keep log size manageable
+            while (LogEntries.Count > 1000)
+            {
+                LogEntries.RemoveAt(0);
+            }
+        }
+    }
+
+    #endregion
+
+    #region Property Change Handlers
+
+    partial void OnIsRunningChanged(bool value)
+    {
+        LoadDataCommand.NotifyCanExecuteChanged();
+        StartBacktestCommand.NotifyCanExecuteChanged();
+        StopBacktestCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnIsDataLoadedChanged(bool value)
+    {
+        StartBacktestCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnSelectedLogLevelChanged(LogLevel value)
+    {
+        // Could filter existing logs here if needed
+    }
+
+    #endregion
+
+    public void Dispose()
+    {
+        if (!_disposed)
+        {
+            _backtestService.OnStatusUpdated -= OnStatusUpdated;
+            _backtestService.OnLogReceived -= OnLogReceived;
+            _backtestService.OnBacktestCompleted -= OnBacktestCompleted;
+            _backtestService.Dispose();
+            _disposed = true;
+        }
+    }
+}

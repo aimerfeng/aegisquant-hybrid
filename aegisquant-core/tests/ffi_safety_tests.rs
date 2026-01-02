@@ -152,7 +152,7 @@ proptest! {
     ) {
         unsafe {
             let mut report = DataQualityReport::default();
-            let path = b"test.csv\0".as_ptr() as *const i8;
+            let path = c"test.csv".as_ptr();
             
             // Null engine
             let result = load_data_from_file(std::ptr::null_mut(), path, &mut report);

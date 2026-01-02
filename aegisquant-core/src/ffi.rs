@@ -292,24 +292,24 @@ pub unsafe extern "C" fn run_backtest(engine: *mut EngineHandle) -> i32 {
     }
 }
 
-/// Log callback function type.
-pub type LogCallback = extern "C" fn(level: i32, message: *const c_char);
+/// Log callback function type for FFI.
+pub type FfiLogCallback = extern "C" fn(level: i32, message: *const c_char);
 
-/// Global log callback (thread-safe placeholder).
-static mut LOG_CALLBACK: Option<LogCallback> = None;
-
-/// Set log callback function.
+/// Set the global log callback for FFI.
 ///
 /// # Safety
-/// - `callback` must be a valid function pointer or null to disable logging
+/// - `callback` must be a valid function pointer
+/// - The callback must remain valid for the lifetime of the program
+/// - The callback must be thread-safe
 ///
 /// # Returns
-/// - ERR_SUCCESS always
+/// - ERR_SUCCESS on success
 #[no_mangle]
-pub unsafe extern "C" fn set_log_callback(callback: LogCallback) -> i32 {
+pub unsafe extern "C" fn set_log_callback(
+    callback: FfiLogCallback,
+) -> i32 {
     let result = catch_unwind(|| {
-        // SAFETY: This is a simple assignment
-        LOG_CALLBACK = Some(callback);
+        crate::logger::set_log_callback(callback);
         ERR_SUCCESS
     });
 

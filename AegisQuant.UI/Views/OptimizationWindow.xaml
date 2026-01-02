@@ -1,0 +1,212 @@
+<Window x:Class="AegisQuant.UI.Views.OptimizationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:AegisQuant.UI.ViewModels"
+        xmlns:converters="clr-namespace:AegisQuant.UI.Converters"
+        mc:Ignorable="d"
+        Title="Parameter Optimization" 
+        Height="700" Width="1000"
+        WindowStartupLocation="CenterOwner">
+    
+    <Window.DataContext>
+        <vm:OptimizationViewModel/>
+    </Window.DataContext>
+    
+    <Window.Resources>
+        <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+        <converters:IsNegativeConverter x:Key="IsNegativeConverter"/>
+    </Window.Resources>
+    
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Data File Selection -->
+        <GroupBox Grid.Row="0" Header="Data File" Margin="0,0,0,16">
+            <Grid Margin="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <TextBox Grid.Column="0" Text="{Binding DataFilePath}" IsReadOnly="True" 
+                         Margin="0,0,8,0"/>
+                <Button Grid.Column="1" Content="Browse..." Command="{Binding SelectFileCommand}"
+                        Padding="16,4"/>
+            </Grid>
+        </GroupBox>
+        
+        <!-- Parameter Ranges -->
+        <GroupBox Grid.Row="1" Header="Parameter Ranges" Margin="0,0,0,16">
+            <Grid Margin="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- Short MA -->
+                <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                    <TextBlock Text="Short MA Period" FontWeight="Bold" Margin="0,0,0,8"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <Label Grid.Row="0" Content="Min:"/>
+                        <TextBox Grid.Row="0" Grid.Column="1" 
+                                 Text="{Binding ShortMaMin, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                        
+                        <Label Grid.Row="1" Content="Max:"/>
+                        <TextBox Grid.Row="1" Grid.Column="1" 
+                                 Text="{Binding ShortMaMax, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                        
+                        <Label Grid.Row="2" Content="Step:"/>
+                        <TextBox Grid.Row="2" Grid.Column="1" 
+                                 Text="{Binding ShortMaStep, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                    </Grid>
+                </StackPanel>
+                
+                <!-- Long MA -->
+                <StackPanel Grid.Column="1" Margin="0,0,16,0">
+                    <TextBlock Text="Long MA Period" FontWeight="Bold" Margin="0,0,0,8"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <Label Grid.Row="0" Content="Min:"/>
+                        <TextBox Grid.Row="0" Grid.Column="1" 
+                                 Text="{Binding LongMaMin, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                        
+                        <Label Grid.Row="1" Content="Max:"/>
+                        <TextBox Grid.Row="1" Grid.Column="1" 
+                                 Text="{Binding LongMaMax, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                        
+                        <Label Grid.Row="2" Content="Step:"/>
+                        <TextBox Grid.Row="2" Grid.Column="1" 
+                                 Text="{Binding LongMaStep, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                    </Grid>
+                </StackPanel>
+                
+                <!-- Position Size -->
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="Position Size" FontWeight="Bold" Margin="0,0,0,8"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <Label Grid.Row="0" Content="Min:"/>
+                        <TextBox Grid.Row="0" Grid.Column="1" 
+                                 Text="{Binding PositionSizeMin, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                        
+                        <Label Grid.Row="1" Content="Max:"/>
+                        <TextBox Grid.Row="1" Grid.Column="1" 
+                                 Text="{Binding PositionSizeMax, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                        
+                        <Label Grid.Row="2" Content="Step:"/>
+                        <TextBox Grid.Row="2" Grid.Column="1" 
+                                 Text="{Binding PositionSizeStep, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                    </Grid>
+                </StackPanel>
+            </Grid>
+        </GroupBox>
+        
+        <!-- Results Grid -->
+        <GroupBox Grid.Row="2" Header="Results (Sorted by Total Return)">
+            <DataGrid ItemsSource="{Binding Results}" AutoGenerateColumns="False"
+                      IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
+                      GridLinesVisibility="Horizontal" AlternatingRowBackground="#F8F8F8">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Short MA" Binding="{Binding ShortMaPeriod}" Width="80"/>
+                    <DataGridTextColumn Header="Long MA" Binding="{Binding LongMaPeriod}" Width="80"/>
+                    <DataGridTextColumn Header="Position Size" Binding="{Binding PositionSize, StringFormat=N0}" Width="100"/>
+                    <DataGridTextColumn Header="Final Equity" Binding="{Binding FinalEquity, StringFormat=C2}" Width="120"/>
+                    <DataGridTextColumn Header="Return %" Binding="{Binding TotalReturnPct, StringFormat=N2}" Width="90">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding TotalReturnPct, Converter={StaticResource IsNegativeConverter}}" Value="True">
+                                        <Setter Property="Foreground" Value="Red"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding TotalReturnPct, Converter={StaticResource IsNegativeConverter}}" Value="False">
+                                        <Setter Property="Foreground" Value="Green"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Max DD %" Binding="{Binding MaxDrawdownPct, StringFormat=N2}" Width="90"/>
+                    <DataGridTextColumn Header="Sharpe" Binding="{Binding SharpeRatio, StringFormat=N3}" Width="80"/>
+                    <DataGridTextColumn Header="Trades" Binding="{Binding TotalTrades}" Width="70"/>
+                    <DataGridTextColumn Header="Win Rate %" Binding="{Binding WinRate, StringFormat=N1}" Width="90"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </GroupBox>
+        
+        <!-- Bottom Controls -->
+        <Grid Grid.Row="3" Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- Progress -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="{Binding StatusMessage}" Margin="0,0,16,0"/>
+                <TextBlock>
+                    <Run Text="Combinations: "/>
+                    <Run Text="{Binding CompletedCombinations, Mode=OneWay}"/>
+                    <Run Text=" / "/>
+                    <Run Text="{Binding TotalCombinations, Mode=OneWay}"/>
+                </TextBlock>
+                <ProgressBar Width="200" Height="20" Margin="16,0,0,0"
+                             Value="{Binding Progress}" Minimum="0" Maximum="100"/>
+                <TextBlock Text="{Binding Progress, StringFormat={}{0:F1}%}" 
+                           Margin="8,0,0,0" VerticalAlignment="Center"/>
+            </StackPanel>
+            
+            <!-- Buttons -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button Content="Start Optimization" Command="{Binding StartOptimizationCommand}"
+                        Padding="16,8" Margin="0,0,8,0"/>
+                <Button Content="Stop" Command="{Binding StopOptimizationCommand}"
+                        Padding="16,8"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

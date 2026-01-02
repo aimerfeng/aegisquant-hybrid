@@ -34,3 +34,7 @@ test_data/
 # OS
 .DS_Store
 Thumbs.db
+
+# Kiro specs and docs (not for git)
+.kiro/
+docs/
