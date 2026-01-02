@@ -1,0 +1,23 @@
+[package]
+name = "aegisquant-core"
+version = "0.1.0"
+edition = "2021"
+description = "High-performance quantitative backtesting engine core"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+rust_decimal = "1.33"
+polars = { version = "0.44", features = ["lazy", "csv", "parquet"] }
+rayon = "1.10"
+thiserror = "1.0"
+
+[dev-dependencies]
+proptest = "1.4"
+criterion = "0.5"
+
+[[bench]]
+name = "hot_path_bench"
+harness = false

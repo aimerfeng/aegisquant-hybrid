@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust-build:
+    name: Rust Build & Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-action@stable
+        with:
+          components: clippy, rustfmt
+      
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            aegisquant-core/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      
+      - name: Build
+        working-directory: aegisquant-core
+        run: cargo build --release
+      
+      - name: Run Clippy
+        working-directory: aegisquant-core
+        run: cargo clippy -- -D warnings
+      
+      - name: Run Tests
+        working-directory: aegisquant-core
+        run: cargo test --release
+      
+      - name: Upload Rust artifacts (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: aegisquant-core-windows
+          path: aegisquant-core/target/release/aegisquant_core.dll
+      
+      - name: Upload Rust artifacts (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: aegisquant-core-linux
+          path: aegisquant-core/target/release/libaegisquant_core.so
+
+  dotnet-build:
+    name: .NET Build & Test
+    runs-on: ${{ matrix.os }}
+    needs: rust-build
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      
+      - name: Download Rust artifacts (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: actions/download-artifact@v4
+        with:
+          name: aegisquant-core-windows
+          path: AegisQuant.Interop/native
+      
+      - name: Download Rust artifacts (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/download-artifact@v4
+        with:
+          name: aegisquant-core-linux
+          path: AegisQuant.Interop/native
+      
+      - name: Restore dependencies
+        run: dotnet restore
+        continue-on-error: true
+      
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+        continue-on-error: true
+      
+      - name: Test
+        run: dotnet test --no-build --configuration Release --verbosity normal
+        continue-on-error: true

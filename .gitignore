@@ -1,0 +1,36 @@
+# Rust
+/aegisquant-core/target/
+**/*.rs.bk
+Cargo.lock
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.so
+.env
+venv/
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+packages/
+*.nupkg
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test data (generated)
+test_data/
+
+# OS
+.DS_Store
+Thumbs.db
