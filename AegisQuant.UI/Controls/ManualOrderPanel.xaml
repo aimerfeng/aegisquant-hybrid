@@ -6,7 +6,8 @@
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="280">
     
-    <Border BorderBrush="#DDD" BorderThickness="1" CornerRadius="4" Padding="12">
+    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="12"
+            Background="{DynamicResource SurfaceBrush}">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -20,7 +21,8 @@
             </Grid.RowDefinitions>
             
             <!-- 标题 -->
-            <TextBlock Grid.Row="0" Text="手动下单" FontWeight="Bold" FontSize="14" Margin="0,0,0,12"/>
+            <TextBlock Grid.Row="0" Text="手动下单" FontWeight="Bold" FontSize="14" Margin="0,0,0,12"
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
             
             <!-- 标的 -->
             <Grid Grid.Row="1" Margin="0,0,0,8">
@@ -28,8 +30,10 @@
                     <ColumnDefinition Width="60"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="标的:" VerticalAlignment="Center"/>
-                <TextBox Grid.Column="1" x:Name="SymbolTextBox" Text="BTCUSDT"/>
+                <TextBlock Text="标的:" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                <TextBox Grid.Column="1" x:Name="SymbolTextBox" Text="BTCUSDT"
+                         Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                         BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
             </Grid>
             
             <!-- 方向 -->
@@ -38,12 +42,12 @@
                     <ColumnDefinition Width="60"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="方向:" VerticalAlignment="Center"/>
+                <TextBlock Text="方向:" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <RadioButton x:Name="BuyRadio" Content="买入" IsChecked="True" 
-                                 Foreground="#FF3333" FontWeight="Bold" Margin="0,0,16,0"/>
+                                 Foreground="{DynamicResource UpBrush}" FontWeight="Bold" Margin="0,0,16,0"/>
                     <RadioButton x:Name="SellRadio" Content="卖出" 
-                                 Foreground="#00CC00" FontWeight="Bold"/>
+                                 Foreground="{DynamicResource DownBrush}" FontWeight="Bold"/>
                 </StackPanel>
             </Grid>
             
@@ -53,8 +57,10 @@
                     <ColumnDefinition Width="60"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="数量:" VerticalAlignment="Center"/>
-                <TextBox Grid.Column="1" x:Name="QuantityTextBox" Text="100"/>
+                <TextBlock Text="数量:" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                <TextBox Grid.Column="1" x:Name="QuantityTextBox" Text="100"
+                         Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                         BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
             </Grid>
             
             <!-- 订单类型 -->
@@ -63,8 +69,10 @@
                     <ColumnDefinition Width="60"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="类型:" VerticalAlignment="Center"/>
-                <ComboBox Grid.Column="1" x:Name="OrderTypeCombo" SelectedIndex="0">
+                <TextBlock Text="类型:" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                <ComboBox Grid.Column="1" x:Name="OrderTypeCombo" SelectedIndex="0"
+                          Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                          BorderBrush="{DynamicResource BorderBrush}">
                     <ComboBoxItem Content="市价单"/>
                     <ComboBoxItem Content="限价单"/>
                 </ComboBox>
@@ -76,9 +84,11 @@
                     <ColumnDefinition Width="60"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="价格:" VerticalAlignment="Center"/>
+                <TextBlock Text="价格:" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
                 <TextBox Grid.Column="1" x:Name="PriceTextBox" Text="0.00" 
-                         IsEnabled="{Binding ElementName=OrderTypeCombo, Path=SelectedIndex, Converter={StaticResource IndexToBoolConverter}}"/>
+                         IsEnabled="{Binding ElementName=OrderTypeCombo, Path=SelectedIndex, Converter={StaticResource IndexToBoolConverter}}"
+                         Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                         BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
             </Grid>
             
             <!-- 下单按钮 -->
@@ -87,17 +97,17 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" Content="买入" Background="#FF3333" Foreground="White" 
+                <Button Grid.Column="0" Content="买入" Background="{DynamicResource UpBrush}" Foreground="White" 
                         FontWeight="Bold" Padding="8,6" Margin="0,0,4,0"
                         Click="BuyButton_Click"/>
-                <Button Grid.Column="1" Content="卖出" Background="#00CC00" Foreground="White" 
+                <Button Grid.Column="1" Content="卖出" Background="{DynamicResource DownBrush}" Foreground="White" 
                         FontWeight="Bold" Padding="8,6" Margin="4,0,0,0"
                         Click="SellButton_Click"/>
             </Grid>
             
             <!-- 状态信息 -->
             <TextBlock Grid.Row="7" x:Name="StatusText" TextWrapping="Wrap" 
-                       Foreground="Gray" FontSize="11" Margin="0,8,0,0"/>
+                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" Margin="0,8,0,0"/>
         </Grid>
     </Border>
 </UserControl>

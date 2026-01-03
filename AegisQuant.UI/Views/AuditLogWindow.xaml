@@ -6,7 +6,8 @@
         xmlns:services="clr-namespace:AegisQuant.UI.Services"
         mc:Ignorable="d"
         Title="审计日志" Height="600" Width="900"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource BackgroundBrush}">
     
     <Grid Margin="12">
         <Grid.RowDefinitions>
@@ -16,7 +17,8 @@
         </Grid.RowDefinitions>
         
         <!-- 筛选面板 -->
-        <Border Grid.Row="0" BorderBrush="#DDD" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,12">
+        <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,12"
+                Background="{DynamicResource SurfaceBrush}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -28,15 +30,17 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 
-                <TextBlock Grid.Column="0" Text="开始时间:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBlock Grid.Column="0" Text="开始时间:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource PrimaryTextBrush}"/>
                 <DatePicker Grid.Column="1" x:Name="StartDatePicker" SelectedDate="{Binding StartDate}" Margin="0,0,16,0"/>
                 
-                <TextBlock Grid.Column="2" Text="结束时间:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBlock Grid.Column="2" Text="结束时间:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource PrimaryTextBrush}"/>
                 <DatePicker Grid.Column="3" x:Name="EndDatePicker" SelectedDate="{Binding EndDate}" Margin="0,0,16,0"/>
                 
-                <TextBlock Grid.Column="4" Text="操作类型:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBlock Grid.Column="4" Text="操作类型:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource PrimaryTextBrush}"/>
                 <ComboBox Grid.Column="5" x:Name="ActionTypeFilter" Width="120" Margin="0,0,16,0"
-                          SelectionChanged="ActionTypeFilter_SelectionChanged">
+                          SelectionChanged="ActionTypeFilter_SelectionChanged"
+                          Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                          BorderBrush="{DynamicResource BorderBrush}">
                     <ComboBoxItem Content="全部" Tag="" IsSelected="True"/>
                     <ComboBoxItem Content="按钮点击" Tag="ButtonClick"/>
                     <ComboBoxItem Content="参数修改" Tag="ParameterChange"/>
@@ -49,7 +53,9 @@
                     <ComboBoxItem Content="回测停止" Tag="BacktestStop"/>
                 </ComboBox>
                 
-                <Button Grid.Column="6" Content="查询" Click="SearchButton_Click" Padding="16,4"/>
+                <Button Grid.Column="6" Content="查询" Click="SearchButton_Click" Padding="16,4"
+                        Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"/>
             </Grid>
         </Border>
         
@@ -62,8 +68,11 @@
                   SelectionMode="Single"
                   GridLinesVisibility="Horizontal"
                   HeadersVisibility="Column"
-                  BorderBrush="#DDD"
-                  BorderThickness="1">
+                  BorderBrush="{DynamicResource BorderBrush}"
+                  BorderThickness="1"
+                  Background="{DynamicResource SurfaceBrush}"
+                  Foreground="{DynamicResource PrimaryTextBrush}"
+                  AlternatingRowBackground="{DynamicResource CardBrush}">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="时间" Binding="{Binding FormattedTimestamp}" Width="160"/>
                 <DataGridTextColumn Header="用户" Binding="{Binding Username}" Width="100"/>
@@ -77,13 +86,16 @@
                 <Style TargetType="DataGridRow">
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding ActionType}" Value="EmergencyStop">
-                            <Setter Property="Background" Value="#FFEEEE"/>
+                            <Setter Property="Background" Value="{DynamicResource ErrorBrush}"/>
+                            <Setter Property="Opacity" Value="0.3"/>
                         </DataTrigger>
                         <DataTrigger Binding="{Binding ActionType}" Value="Login">
-                            <Setter Property="Background" Value="#EEFFEE"/>
+                            <Setter Property="Background" Value="{DynamicResource SuccessBrush}"/>
+                            <Setter Property="Opacity" Value="0.3"/>
                         </DataTrigger>
                         <DataTrigger Binding="{Binding ActionType}" Value="EnvironmentChange">
-                            <Setter Property="Background" Value="#FFFFEE"/>
+                            <Setter Property="Background" Value="{DynamicResource WarningBrush}"/>
+                            <Setter Property="Opacity" Value="0.3"/>
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
@@ -92,11 +104,19 @@
         
         <!-- 底部按钮 -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-            <TextBlock x:Name="RecordCountText" Text="共 0 条记录" VerticalAlignment="Center" Margin="0,0,16,0"/>
-            <Button Content="导出 JSON" Click="ExportJsonButton_Click" Padding="16,4" Margin="0,0,8,0"/>
-            <Button Content="导出 CSV" Click="ExportCsvButton_Click" Padding="16,4" Margin="0,0,8,0"/>
-            <Button Content="刷新" Click="RefreshButton_Click" Padding="16,4" Margin="0,0,8,0"/>
-            <Button Content="关闭" Click="CloseButton_Click" Padding="16,4"/>
+            <TextBlock x:Name="RecordCountText" Text="共 0 条记录" VerticalAlignment="Center" Margin="0,0,16,0" Foreground="{DynamicResource SecondaryTextBrush}"/>
+            <Button Content="导出 JSON" Click="ExportJsonButton_Click" Padding="16,4" Margin="0,0,8,0"
+                    Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"/>
+            <Button Content="导出 CSV" Click="ExportCsvButton_Click" Padding="16,4" Margin="0,0,8,0"
+                    Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"/>
+            <Button Content="刷新" Click="RefreshButton_Click" Padding="16,4" Margin="0,0,8,0"
+                    Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"/>
+            <Button Content="关闭" Click="CloseButton_Click" Padding="16,4"
+                    Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"/>
         </StackPanel>
     </Grid>
 </Window>

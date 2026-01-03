@@ -6,7 +6,8 @@
              mc:Ignorable="d" 
              d:DesignHeight="200" d:DesignWidth="280">
     
-    <Border x:Name="MainBorder" BorderBrush="#DDD" BorderThickness="1" CornerRadius="4" Padding="12">
+    <Border x:Name="MainBorder" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="12"
+            Background="{DynamicResource SurfaceBrush}">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -17,20 +18,22 @@
             </Grid.RowDefinitions>
             
             <!-- 标题 -->
-            <TextBlock Grid.Row="0" Text="紧急控制" FontWeight="Bold" FontSize="14" Margin="0,0,0,12"/>
+            <TextBlock Grid.Row="0" Text="紧急控制" FontWeight="Bold" FontSize="14" Margin="0,0,0,12"
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
             
             <!-- 状态指示 -->
             <Border Grid.Row="1" x:Name="StatusBorder" CornerRadius="4" Padding="8,4" Margin="0,0,0,12"
-                    Background="#E8F5E9">
+                    Background="{DynamicResource CardBrush}">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Ellipse x:Name="StatusIndicator" Width="12" Height="12" Fill="#4CAF50" Margin="0,0,8,0"/>
-                    <TextBlock x:Name="StatusText" Text="自动交易运行中" FontWeight="SemiBold"/>
+                    <Ellipse x:Name="StatusIndicator" Width="12" Height="12" Fill="{DynamicResource SuccessBrush}" Margin="0,0,8,0"/>
+                    <TextBlock x:Name="StatusText" Text="自动交易运行中" FontWeight="SemiBold"
+                               Foreground="{DynamicResource PrimaryTextBrush}"/>
                 </StackPanel>
             </Border>
             
             <!-- 一键停止按钮 -->
             <Button Grid.Row="2" x:Name="EmergencyStopButton" 
-                    Background="#DC143C" Foreground="White" 
+                    Background="{DynamicResource DangerButtonBrush}" Foreground="White" 
                     FontWeight="Bold" FontSize="14"
                     Padding="16,12" Margin="0,0,0,8"
                     Click="EmergencyStopButton_Click">
@@ -42,7 +45,7 @@
             
             <!-- 一键清仓按钮 -->
             <Button Grid.Row="3" x:Name="CloseAllButton" 
-                    Background="#FF8C00" Foreground="White" 
+                    Background="{DynamicResource WarningButtonBrush}" Foreground="White" 
                     FontWeight="Bold" FontSize="14"
                     Padding="16,12" Margin="0,0,0,8"
                     Click="CloseAllButton_Click">
@@ -54,7 +57,7 @@
             
             <!-- 恢复按钮 (停止后显示) -->
             <Button Grid.Row="4" x:Name="ResumeButton" 
-                    Background="#4CAF50" Foreground="White" 
+                    Background="{DynamicResource SuccessButtonBrush}" Foreground="White" 
                     FontWeight="Bold" FontSize="14"
                     Padding="16,12" Visibility="Collapsed"
                     Click="ResumeButton_Click">

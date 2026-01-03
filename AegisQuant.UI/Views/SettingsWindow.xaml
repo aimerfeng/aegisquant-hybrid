@@ -8,7 +8,8 @@
         Height="200" Width="350"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        ShowInTaskbar="False">
+        ShowInTaskbar="False"
+        Background="{DynamicResource BackgroundBrush}">
     
     <Grid Margin="20">
         <Grid.RowDefinitions>
@@ -20,11 +21,14 @@
         <!-- Language Selection -->
         <StackPanel Grid.Row="0">
             <TextBlock Text="{DynamicResource Language}" 
-                       FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
+                       FontWeight="Bold" FontSize="14" Margin="0,0,0,8"
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
             
             <ComboBox x:Name="LanguageComboBox" 
                       Width="200" HorizontalAlignment="Left"
-                      SelectionChanged="LanguageComboBox_SelectionChanged">
+                      SelectionChanged="LanguageComboBox_SelectionChanged"
+                      Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                      BorderBrush="{DynamicResource BorderBrush}">
                 <ComboBoxItem Tag="en-US">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="🇺🇸" FontSize="16" Margin="0,0,8,0"/>
@@ -45,10 +49,13 @@
                     HorizontalAlignment="Right" Margin="0,20,0,0">
             <Button Content="{DynamicResource OK}" 
                     Width="80" Padding="8,4" Margin="0,0,8,0"
-                    Click="OkButton_Click" IsDefault="True"/>
+                    Click="OkButton_Click" IsDefault="True"
+                    Background="{DynamicResource AccentBrush}" Foreground="White"/>
             <Button Content="{DynamicResource Cancel}" 
                     Width="80" Padding="8,4"
-                    Click="CancelButton_Click" IsCancel="True"/>
+                    Click="CancelButton_Click" IsCancel="True"
+                    Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"/>
         </StackPanel>
     </Grid>
 </Window>

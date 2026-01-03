@@ -8,7 +8,8 @@
         mc:Ignorable="d"
         Title="Parameter Optimization" 
         Height="700" Width="1000"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource BackgroundBrush}">
     
     <Window.DataContext>
         <vm:OptimizationViewModel/>
@@ -28,7 +29,8 @@
         </Grid.RowDefinitions>
         
         <!-- Data File Selection -->
-        <GroupBox Grid.Row="0" Header="Data File" Margin="0,0,0,16">
+        <GroupBox Grid.Row="0" Header="Data File" Margin="0,0,0,16" 
+                  Foreground="{DynamicResource PrimaryTextBrush}" BorderBrush="{DynamicResource BorderBrush}">
             <Grid Margin="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -36,14 +38,19 @@
                 </Grid.ColumnDefinitions>
                 
                 <TextBox Grid.Column="0" Text="{Binding DataFilePath}" IsReadOnly="True" 
-                         Margin="0,0,8,0"/>
+                         Margin="0,0,8,0"
+                         Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                         BorderBrush="{DynamicResource BorderBrush}"/>
                 <Button Grid.Column="1" Content="Browse..." Command="{Binding SelectFileCommand}"
-                        Padding="16,4"/>
+                        Padding="16,4"
+                        Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"/>
             </Grid>
         </GroupBox>
         
         <!-- Parameter Ranges -->
-        <GroupBox Grid.Row="1" Header="Parameter Ranges" Margin="0,0,0,16">
+        <GroupBox Grid.Row="1" Header="Parameter Ranges" Margin="0,0,0,16"
+                  Foreground="{DynamicResource PrimaryTextBrush}" BorderBrush="{DynamicResource BorderBrush}">
             <Grid Margin="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -53,7 +60,7 @@
                 
                 <!-- Short MA -->
                 <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                    <TextBlock Text="Short MA Period" FontWeight="Bold" Margin="0,0,0,8"/>
+                    <TextBlock Text="Short MA Period" FontWeight="Bold" Margin="0,0,0,8" Foreground="{DynamicResource PrimaryTextBrush}"/>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -65,26 +72,32 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         
-                        <Label Grid.Row="0" Content="Min:"/>
+                        <Label Grid.Row="0" Content="Min:" Foreground="{DynamicResource SecondaryTextBrush}"/>
                         <TextBox Grid.Row="0" Grid.Column="1" 
                                  Text="{Binding ShortMaMin, UpdateSourceTrigger=PropertyChanged}"
-                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"
+                                 Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                                 BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
                         
-                        <Label Grid.Row="1" Content="Max:"/>
+                        <Label Grid.Row="1" Content="Max:" Foreground="{DynamicResource SecondaryTextBrush}"/>
                         <TextBox Grid.Row="1" Grid.Column="1" 
                                  Text="{Binding ShortMaMax, UpdateSourceTrigger=PropertyChanged}"
-                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"
+                                 Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                                 BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
                         
-                        <Label Grid.Row="2" Content="Step:"/>
+                        <Label Grid.Row="2" Content="Step:" Foreground="{DynamicResource SecondaryTextBrush}"/>
                         <TextBox Grid.Row="2" Grid.Column="1" 
                                  Text="{Binding ShortMaStep, UpdateSourceTrigger=PropertyChanged}"
-                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"
+                                 Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                                 BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
                     </Grid>
                 </StackPanel>
                 
                 <!-- Long MA -->
                 <StackPanel Grid.Column="1" Margin="0,0,16,0">
-                    <TextBlock Text="Long MA Period" FontWeight="Bold" Margin="0,0,0,8"/>
+                    <TextBlock Text="Long MA Period" FontWeight="Bold" Margin="0,0,0,8" Foreground="{DynamicResource PrimaryTextBrush}"/>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -96,26 +109,32 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         
-                        <Label Grid.Row="0" Content="Min:"/>
+                        <Label Grid.Row="0" Content="Min:" Foreground="{DynamicResource SecondaryTextBrush}"/>
                         <TextBox Grid.Row="0" Grid.Column="1" 
                                  Text="{Binding LongMaMin, UpdateSourceTrigger=PropertyChanged}"
-                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"
+                                 Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                                 BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
                         
-                        <Label Grid.Row="1" Content="Max:"/>
+                        <Label Grid.Row="1" Content="Max:" Foreground="{DynamicResource SecondaryTextBrush}"/>
                         <TextBox Grid.Row="1" Grid.Column="1" 
                                  Text="{Binding LongMaMax, UpdateSourceTrigger=PropertyChanged}"
-                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"
+                                 Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                                 BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
                         
-                        <Label Grid.Row="2" Content="Step:"/>
+                        <Label Grid.Row="2" Content="Step:" Foreground="{DynamicResource SecondaryTextBrush}"/>
                         <TextBox Grid.Row="2" Grid.Column="1" 
                                  Text="{Binding LongMaStep, UpdateSourceTrigger=PropertyChanged}"
-                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"
+                                 Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                                 BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
                     </Grid>
                 </StackPanel>
                 
                 <!-- Position Size -->
                 <StackPanel Grid.Column="2">
-                    <TextBlock Text="Position Size" FontWeight="Bold" Margin="0,0,0,8"/>
+                    <TextBlock Text="Position Size" FontWeight="Bold" Margin="0,0,0,8" Foreground="{DynamicResource PrimaryTextBrush}"/>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -127,30 +146,39 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         
-                        <Label Grid.Row="0" Content="Min:"/>
+                        <Label Grid.Row="0" Content="Min:" Foreground="{DynamicResource SecondaryTextBrush}"/>
                         <TextBox Grid.Row="0" Grid.Column="1" 
                                  Text="{Binding PositionSizeMin, UpdateSourceTrigger=PropertyChanged}"
-                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"
+                                 Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                                 BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
                         
-                        <Label Grid.Row="1" Content="Max:"/>
+                        <Label Grid.Row="1" Content="Max:" Foreground="{DynamicResource SecondaryTextBrush}"/>
                         <TextBox Grid.Row="1" Grid.Column="1" 
                                  Text="{Binding PositionSizeMax, UpdateSourceTrigger=PropertyChanged}"
-                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"
+                                 Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                                 BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
                         
-                        <Label Grid.Row="2" Content="Step:"/>
+                        <Label Grid.Row="2" Content="Step:" Foreground="{DynamicResource SecondaryTextBrush}"/>
                         <TextBox Grid.Row="2" Grid.Column="1" 
                                  Text="{Binding PositionSizeStep, UpdateSourceTrigger=PropertyChanged}"
-                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                                 IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"
+                                 Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                                 BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
                     </Grid>
                 </StackPanel>
             </Grid>
         </GroupBox>
         
         <!-- Results Grid -->
-        <GroupBox Grid.Row="2" Header="Results (Sorted by Total Return)">
+        <GroupBox Grid.Row="2" Header="Results (Sorted by Total Return)"
+                  Foreground="{DynamicResource PrimaryTextBrush}" BorderBrush="{DynamicResource BorderBrush}">
             <DataGrid ItemsSource="{Binding Results}" AutoGenerateColumns="False"
                       IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
-                      GridLinesVisibility="Horizontal" AlternatingRowBackground="#F8F8F8">
+                      GridLinesVisibility="Horizontal" AlternatingRowBackground="{DynamicResource CardBrush}"
+                      Background="{DynamicResource SurfaceBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                      BorderBrush="{DynamicResource BorderBrush}">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Short MA" Binding="{Binding ShortMaPeriod}" Width="80"/>
                     <DataGridTextColumn Header="Long MA" Binding="{Binding LongMaPeriod}" Width="80"/>
@@ -161,10 +189,10 @@
                             <Style TargetType="TextBlock">
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding TotalReturnPct, Converter={StaticResource IsNegativeConverter}}" Value="True">
-                                        <Setter Property="Foreground" Value="Red"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource DownBrush}"/>
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding TotalReturnPct, Converter={StaticResource IsNegativeConverter}}" Value="False">
-                                        <Setter Property="Foreground" Value="Green"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource UpBrush}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -187,25 +215,28 @@
             
             <!-- Progress -->
             <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="{Binding StatusMessage}" Margin="0,0,16,0"/>
-                <TextBlock>
+                <TextBlock Text="{Binding StatusMessage}" Margin="0,0,16,0" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                <TextBlock Foreground="{DynamicResource PrimaryTextBrush}">
                     <Run Text="Combinations: "/>
                     <Run Text="{Binding CompletedCombinations, Mode=OneWay}"/>
                     <Run Text=" / "/>
                     <Run Text="{Binding TotalCombinations, Mode=OneWay}"/>
                 </TextBlock>
                 <ProgressBar Width="200" Height="20" Margin="16,0,0,0"
-                             Value="{Binding Progress}" Minimum="0" Maximum="100"/>
+                             Value="{Binding Progress}" Minimum="0" Maximum="100"
+                             Background="{DynamicResource CardBrush}" Foreground="{DynamicResource AccentBrush}"/>
                 <TextBlock Text="{Binding Progress, StringFormat={}{0:F1}%}" 
-                           Margin="8,0,0,0" VerticalAlignment="Center"/>
+                           Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource PrimaryTextBrush}"/>
             </StackPanel>
             
             <!-- Buttons -->
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <Button Content="Start Optimization" Command="{Binding StartOptimizationCommand}"
-                        Padding="16,8" Margin="0,0,8,0"/>
+                        Padding="16,8" Margin="0,0,8,0"
+                        Background="{DynamicResource SuccessButtonBrush}" Foreground="White"/>
                 <Button Content="Stop" Command="{Binding StopOptimizationCommand}"
-                        Padding="16,8"/>
+                        Padding="16,8"
+                        Background="{DynamicResource DangerButtonBrush}" Foreground="White"/>
             </StackPanel>
         </Grid>
     </Grid>

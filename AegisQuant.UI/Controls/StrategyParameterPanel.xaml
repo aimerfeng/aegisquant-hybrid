@@ -76,10 +76,11 @@
             
             <!-- Validation Message -->
             <Border x:Name="ValidationBorder" Grid.Row="2" 
-                    Background="#33FF6B6B" BorderBrush="#FF6B6B" BorderThickness="1"
+                    Background="{DynamicResource ErrorBrush}" Opacity="0.2"
+                    BorderBrush="{DynamicResource ErrorBrush}" BorderThickness="1"
                     CornerRadius="4" Padding="8,6" Margin="0,8,0,0"
                     Visibility="Collapsed">
-                <TextBlock x:Name="ValidationText" Foreground="#FF6B6B" 
+                <TextBlock x:Name="ValidationText" Foreground="{DynamicResource ErrorBrush}" 
                            FontSize="11" TextWrapping="Wrap"/>
             </Border>
         </Grid>

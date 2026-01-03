@@ -48,6 +48,23 @@
     <SolidColorBrush x:Key="BidBrush" Color="{StaticResource BidColor}"/>
     <SolidColorBrush x:Key="AskBrush" Color="{StaticResource AskColor}"/>
     
+    <!-- ========== 语义化颜色 ========== -->
+    <Color x:Key="SuccessColor">#4CAF50</Color>
+    <Color x:Key="WarningColor">#FF9800</Color>
+    <Color x:Key="ErrorColor">#F44336</Color>
+    <Color x:Key="InfoColor">#2196F3</Color>
+    
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}"/>
+    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}"/>
+    <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource ErrorColor}"/>
+    <SolidColorBrush x:Key="InfoBrush" Color="{StaticResource InfoColor}"/>
+    
+    <!-- 按钮背景色 -->
+    <SolidColorBrush x:Key="SuccessButtonBrush" Color="#388E3C"/>
+    <SolidColorBrush x:Key="DangerButtonBrush" Color="#D32F2F"/>
+    <SolidColorBrush x:Key="WarningButtonBrush" Color="#F57C00"/>
+    <SolidColorBrush x:Key="PrimaryButtonBrush" Color="#1976D2"/>
+    
     <!-- ========== 高密度控件样式 ========== -->
     
     <!-- 紧凑文本块 -->

@@ -7,7 +7,8 @@
         Title="AegisQuant 登录" Height="350" Width="400"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
-        WindowStyle="SingleBorderWindow">
+        WindowStyle="SingleBorderWindow"
+        Background="{DynamicResource BackgroundBrush}">
     
     <Grid>
         <Grid.RowDefinitions>
@@ -16,40 +17,45 @@
         </Grid.RowDefinitions>
         
         <!-- 标题栏 -->
-        <Border Grid.Row="0" Background="#1E3A5F" Padding="20">
+        <Border Grid.Row="0" Background="{DynamicResource PrimaryButtonBrush}" Padding="20">
             <StackPanel HorizontalAlignment="Center">
                 <TextBlock Text="AegisQuant" FontSize="28" FontWeight="Bold" 
                            Foreground="White" HorizontalAlignment="Center"/>
                 <TextBlock Text="量化交易系统" FontSize="14" 
-                           Foreground="#B0C4DE" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                           Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
             </StackPanel>
         </Border>
         
         <!-- 登录表单 -->
-        <Border Grid.Row="1" Padding="30">
+        <Border Grid.Row="1" Padding="30" Background="{DynamicResource SurfaceBrush}">
             <StackPanel VerticalAlignment="Center">
                 <!-- 用户名 -->
-                <TextBlock Text="用户名" Margin="0,0,0,4"/>
-                <TextBox x:Name="UsernameTextBox" Padding="8" FontSize="14" Margin="0,0,0,16"/>
+                <TextBlock Text="用户名" Margin="0,0,0,4" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                <TextBox x:Name="UsernameTextBox" Padding="8" FontSize="14" Margin="0,0,0,16"
+                         Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                         BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
                 
                 <!-- 密码 -->
-                <TextBlock Text="密码" Margin="0,0,0,4"/>
-                <PasswordBox x:Name="PasswordBox" Padding="8" FontSize="14" Margin="0,0,0,8"/>
+                <TextBlock Text="密码" Margin="0,0,0,4" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                <PasswordBox x:Name="PasswordBox" Padding="8" FontSize="14" Margin="0,0,0,8"
+                             Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                             BorderBrush="{DynamicResource BorderBrush}"/>
                 
                 <!-- 记住我 -->
-                <CheckBox x:Name="RememberMeCheckBox" Content="记住我" Margin="0,0,0,16"/>
+                <CheckBox x:Name="RememberMeCheckBox" Content="记住我" Margin="0,0,0,16"
+                          Foreground="{DynamicResource PrimaryTextBrush}"/>
                 
                 <!-- 错误信息 -->
-                <TextBlock x:Name="ErrorText" Foreground="Red" TextWrapping="Wrap" 
+                <TextBlock x:Name="ErrorText" Foreground="{DynamicResource ErrorBrush}" TextWrapping="Wrap" 
                            Margin="0,0,0,16" Visibility="Collapsed"/>
                 
                 <!-- 锁定信息 -->
-                <TextBlock x:Name="LockoutText" Foreground="Orange" TextWrapping="Wrap" 
+                <TextBlock x:Name="LockoutText" Foreground="{DynamicResource WarningBrush}" TextWrapping="Wrap" 
                            Margin="0,0,0,16" Visibility="Collapsed"/>
                 
                 <!-- 登录按钮 -->
                 <Button x:Name="LoginButton" Content="登录" 
-                        Background="#1E3A5F" Foreground="White"
+                        Background="{DynamicResource PrimaryButtonBrush}" Foreground="White"
                         FontSize="14" FontWeight="Bold"
                         Padding="16,10" Margin="0,8,0,0"
                         Click="LoginButton_Click"/>

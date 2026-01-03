@@ -206,9 +206,10 @@
 
         <!-- Error Message -->
         <Border x:Name="ErrorBorder" Grid.Row="2" Margin="0,12,0,0"
-                Background="#33FF0000" BorderBrush="#FF0000" BorderThickness="1"
+                Background="{DynamicResource ErrorBrush}" Opacity="0.2" 
+                BorderBrush="{DynamicResource ErrorBrush}" BorderThickness="1"
                 CornerRadius="4" Padding="12,8" Visibility="Collapsed">
-            <TextBlock x:Name="ErrorText" Foreground="#FF0000" TextWrapping="Wrap"/>
+            <TextBlock x:Name="ErrorText" Foreground="{DynamicResource ErrorBrush}" TextWrapping="Wrap"/>
         </Border>
 
         <!-- Buttons -->
