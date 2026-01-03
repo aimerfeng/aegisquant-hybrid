@@ -1,0 +1,42 @@
+{
+  "$schema": "../schemas/strategy-schema.json",
+  "name": "MA Crossover Strategy",
+  "description": "Buy when short MA crosses above long MA (golden cross), sell when short MA crosses below long MA (death cross)",
+  "version": "1.0",
+  "parameters": {
+    "short_period": {
+      "type": "int",
+      "default": 5,
+      "min": 2,
+      "max": 50,
+      "description": "Short moving average period"
+    },
+    "long_period": {
+      "type": "int",
+      "default": 20,
+      "min": 5,
+      "max": 200,
+      "description": "Long moving average period"
+    }
+  },
+  "indicators": [
+    {
+      "name": "ma_short",
+      "type": "SMA",
+      "period": "$short_period"
+    },
+    {
+      "name": "ma_long",
+      "type": "SMA",
+      "period": "$long_period"
+    }
+  ],
+  "rules": {
+    "buy": {
+      "condition": "CROSS_ABOVE($ma_short, $ma_long)"
+    },
+    "sell": {
+      "condition": "CROSS_BELOW($ma_short, $ma_long)"
+    }
+  }
+}

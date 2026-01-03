@@ -1,0 +1,120 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aegisquant.io/schemas/strategy-schema.json",
+  "title": "AegisQuant Strategy Configuration",
+  "description": "Schema for JSON-based trading strategy configuration",
+  "type": "object",
+  "required": ["name", "rules"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Strategy name",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "description": "Strategy description"
+    },
+    "version": {
+      "type": "string",
+      "description": "Strategy version",
+      "default": "1.0"
+    },
+    "parameters": {
+      "type": "object",
+      "description": "Strategy parameters",
+      "additionalProperties": {
+        "$ref": "#/definitions/parameter"
+      }
+    },
+    "indicators": {
+      "type": "array",
+      "description": "Technical indicators used by the strategy",
+      "items": {
+        "$ref": "#/definitions/indicator"
+      }
+    },
+    "rules": {
+      "type": "object",
+      "description": "Trading rules",
+      "properties": {
+        "buy": {
+          "$ref": "#/definitions/rule"
+        },
+        "sell": {
+          "$ref": "#/definitions/rule"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "parameter": {
+      "type": "object",
+      "required": ["type", "default"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["int", "double", "bool", "string"],
+          "description": "Parameter type"
+        },
+        "default": {
+          "description": "Default value"
+        },
+        "min": {
+          "description": "Minimum value (for numeric types)"
+        },
+        "max": {
+          "description": "Maximum value (for numeric types)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Parameter description"
+        }
+      }
+    },
+    "indicator": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Indicator variable name (used in conditions as $name)"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "SMA", "EMA", "RSI", "MACD", "MACD_SIGNAL", "MACD_HISTOGRAM",
+            "BB", "BollingerBands", "BB_UPPER", "BB_LOWER",
+            "ATR", "STOCH", "Stochastic"
+          ],
+          "description": "Indicator type"
+        },
+        "period": {
+          "description": "Indicator period (number or parameter reference like $param_name)"
+        },
+        "fastPeriod": {
+          "description": "Fast period for MACD"
+        },
+        "slowPeriod": {
+          "description": "Slow period for MACD"
+        },
+        "signalPeriod": {
+          "description": "Signal period for MACD"
+        },
+        "stdDev": {
+          "description": "Standard deviation for Bollinger Bands"
+        }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "required": ["condition"],
+      "properties": {
+        "condition": {
+          "type": "string",
+          "description": "Condition expression. Supports: <, >, <=, >=, ==, !=, AND, OR, CROSS_ABOVE(), CROSS_BELOW(). Variables start with $."
+        }
+      }
+    }
+  }
+}

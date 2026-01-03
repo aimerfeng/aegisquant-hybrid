@@ -1,0 +1,87 @@
+<UserControl x:Class="AegisQuant.UI.Controls.StrategyParameterPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="300" d:DesignWidth="280">
+    
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
+        <Style x:Key="ParameterLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+        </Style>
+        
+        <Style x:Key="ParameterInput" TargetType="TextBox">
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+            <Setter Property="Background" Value="{DynamicResource CardBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource PrimaryTextBrush}"/>
+        </Style>
+        
+        <Style x:Key="ParameterDescription" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+            <Setter Property="Margin" Value="0,-8,0,12"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+    </UserControl.Resources>
+    
+    <Border Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="1" CornerRadius="4" Padding="12">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+            <!-- Header -->
+            <TextBlock Grid.Row="0" Text="{DynamicResource String.Strategy.Parameters}"
+                       FontWeight="SemiBold" FontSize="14"
+                       Foreground="{DynamicResource PrimaryTextBrush}"
+                       Margin="0,0,0,12"/>
+            
+            <!-- Dynamic Parameters -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <ItemsControl x:Name="ParametersItemsControl">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="0,0,0,4">
+                                <TextBlock Text="{Binding DisplayName}" Style="{StaticResource ParameterLabel}"/>
+                                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{StaticResource ParameterInput}"
+                                         IsEnabled="{Binding IsEditable}"
+                                         Tag="{Binding Name}"
+                                         TextChanged="ParameterTextBox_TextChanged"/>
+                                <TextBlock Text="{Binding Description}" Style="{StaticResource ParameterDescription}"
+                                           Visibility="{Binding HasDescription, Converter={StaticResource BoolToVisConverter}}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+            
+            <!-- No Parameters Message -->
+            <TextBlock x:Name="NoParametersText" Grid.Row="1"
+                       Text="No configurable parameters"
+                       Foreground="{DynamicResource SecondaryTextBrush}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Visibility="Collapsed"/>
+            
+            <!-- Validation Message -->
+            <Border x:Name="ValidationBorder" Grid.Row="2" 
+                    Background="#33FF6B6B" BorderBrush="#FF6B6B" BorderThickness="1"
+                    CornerRadius="4" Padding="8,6" Margin="0,8,0,0"
+                    Visibility="Collapsed">
+                <TextBlock x:Name="ValidationText" Foreground="#FF6B6B" 
+                           FontSize="11" TextWrapping="Wrap"/>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

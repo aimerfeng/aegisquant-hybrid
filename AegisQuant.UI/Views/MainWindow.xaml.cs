@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using AegisQuant.UI.Services;
+using AegisQuant.UI.Strategy;
 using AegisQuant.UI.ViewModels;
 using ScottPlot;
 
@@ -14,6 +15,13 @@ namespace AegisQuant.UI.Views;
 public partial class MainWindow : Window
 {
     private MainViewModel? _viewModel;
+    private readonly StrategyManagerService _strategyManager;
+    private IStrategy? _currentStrategy;
+    
+    // UI elements (defined here for compatibility)
+    private TextBlock? CurrentStrategyNameText => FindName("CurrentStrategyNameText") as TextBlock;
+    private TextBlock? CurrentStrategyTypeText => FindName("CurrentStrategyTypeText") as TextBlock;
+    private Button? UseBuiltInButton => FindName("UseBuiltInButton") as Button;
 
     public MainWindow()
     {
@@ -22,8 +30,9 @@ public partial class MainWindow : Window
         // Get the view model
         _viewModel = DataContext as MainViewModel;
 
-        // Initialize environment service
+        // Initialize services
         EnvironmentService.Instance.Initialize();
+        _strategyManager = new StrategyManagerService();
 
         // Set up chart
         SetupChart();
@@ -32,39 +41,6 @@ public partial class MainWindow : Window
         if (_viewModel != null)
         {
             _viewModel.EquityCurve.CollectionChanged += EquityCurve_CollectionChanged;
-        }
-
-        // Sync environment selector with current environment
-        SyncEnvironmentSelector();
-    }
-
-    private void SyncEnvironmentSelector()
-    {
-        var currentEnv = EnvironmentService.Instance.CurrentEnvironment;
-        foreach (ComboBoxItem item in EnvironmentSelector.Items)
-        {
-            if (item.Tag?.ToString() == currentEnv.ToString())
-            {
-                EnvironmentSelector.SelectedItem = item;
-                break;
-            }
-        }
-    }
-
-    private void EnvironmentSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (EnvironmentSelector.SelectedItem is ComboBoxItem selectedItem)
-        {
-            var envTag = selectedItem.Tag?.ToString();
-            if (Enum.TryParse<TradingEnvironment>(envTag, out var environment))
-            {
-                var success = EnvironmentService.Instance.SetEnvironment(environment);
-                if (!success)
-                {
-                    // 用户取消了切换，恢复选择
-                    SyncEnvironmentSelector();
-                }
-            }
         }
     }
 
@@ -131,9 +107,60 @@ public partial class MainWindow : Window
         settingsWindow.ShowDialog();
     }
 
+    private void LoadStrategyButton_Click(object sender, RoutedEventArgs e)
+    {
+        var loaderWindow = new StrategyLoaderWindow(_strategyManager)
+        {
+            Owner = this
+        };
+
+        if (loaderWindow.ShowDialog() == true && loaderWindow.LoadedStrategy != null)
+        {
+            // Dispose previous strategy if any
+            _currentStrategy?.Dispose();
+            _currentStrategy = loaderWindow.LoadedStrategy;
+
+            // Update UI
+            if (CurrentStrategyNameText != null)
+                CurrentStrategyNameText.Text = _currentStrategy.Name;
+            if (CurrentStrategyTypeText != null)
+                CurrentStrategyTypeText.Text = _currentStrategy.Type switch
+                {
+                    StrategyType.JsonConfig => "JSON Configuration",
+                    StrategyType.PythonScript => "Python Script",
+                    _ => "External"
+                };
+            if (UseBuiltInButton != null)
+                UseBuiltInButton.Visibility = Visibility.Visible;
+
+            // Notify view model about strategy change
+            _viewModel?.SetExternalStrategy(_currentStrategy);
+        }
+    }
+
+    private void UseBuiltInButton_Click(object sender, RoutedEventArgs e)
+    {
+        // Dispose external strategy
+        _currentStrategy?.Dispose();
+        _currentStrategy = null;
+
+        // Reset UI
+        if (CurrentStrategyNameText != null)
+            CurrentStrategyNameText.Text = FindResource("String.Strategy.BuiltIn") as string ?? "Built-in (DualMA)";
+        if (CurrentStrategyTypeText != null)
+            CurrentStrategyTypeText.Text = "Built-in";
+        if (UseBuiltInButton != null)
+            UseBuiltInButton.Visibility = Visibility.Collapsed;
+
+        // Notify view model to use built-in strategy
+        _viewModel?.ClearExternalStrategy();
+    }
+
     private void Window_Closing(object? sender, CancelEventArgs e)
     {
         // Clean up resources
+        _currentStrategy?.Dispose();
+        
         if (_viewModel != null)
         {
             _viewModel.EquityCurve.CollectionChanged -= EquityCurve_CollectionChanged;

@@ -19,6 +19,9 @@
     
     <!-- Docking Layout -->
     <PackageReference Include="Dirkster.AvalonDock" Version="4.72.1" />
+    
+    <!-- Python Integration -->
+    <PackageReference Include="pythonnet" Version="3.0.3" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,0 +1,44 @@
+{
+  "$schema": "../schemas/strategy-schema.json",
+  "name": "RSI Oversold/Overbought Strategy",
+  "description": "Buy when RSI drops below oversold level, sell when RSI rises above overbought level",
+  "version": "1.0",
+  "parameters": {
+    "rsi_period": {
+      "type": "int",
+      "default": 14,
+      "min": 2,
+      "max": 100,
+      "description": "RSI calculation period"
+    },
+    "oversold": {
+      "type": "double",
+      "default": 30,
+      "min": 0,
+      "max": 50,
+      "description": "Oversold threshold (buy signal)"
+    },
+    "overbought": {
+      "type": "double",
+      "default": 70,
+      "min": 50,
+      "max": 100,
+      "description": "Overbought threshold (sell signal)"
+    }
+  },
+  "indicators": [
+    {
+      "name": "rsi",
+      "type": "RSI",
+      "period": "$rsi_period"
+    }
+  ],
+  "rules": {
+    "buy": {
+      "condition": "$rsi < $oversold"
+    },
+    "sell": {
+      "condition": "$rsi > $overbought"
+    }
+  }
+}

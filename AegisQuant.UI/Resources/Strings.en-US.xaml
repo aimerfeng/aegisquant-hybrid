@@ -83,7 +83,24 @@
     <system:String x:Key="LongMA">Long MA</system:String>
     <system:String x:Key="SharpeRatio">Sharpe Ratio</system:String>
     <system:String x:Key="TotalReturnPct">Return %</system:String>
-    <system:String x:Key="MaxDrawdownPct">Drawdown %</system:String>
+    <system:String x:Key="OptMaxDrawdownPct">Drawdown %</system:String>
     <system:String x:Key="Trades">Trades</system:String>
+    
+    <!-- Strategy Management -->
+    <system:String x:Key="String.Strategy.LoadStrategy">Load Strategy</system:String>
+    <system:String x:Key="String.Strategy.LoadStrategyDescription">Select a JSON or Python strategy file to load</system:String>
+    <system:String x:Key="String.Strategy.SelectFile">Select File</system:String>
+    <system:String x:Key="String.Strategy.RecentStrategies">Recent Strategies</system:String>
+    <system:String x:Key="String.Strategy.Preview">Preview</system:String>
+    <system:String x:Key="String.Strategy.Name">Name</system:String>
+    <system:String x:Key="String.Strategy.Type">Type</system:String>
+    <system:String x:Key="String.Strategy.Description">Description</system:String>
+    <system:String x:Key="String.Strategy.Parameters">Parameters</system:String>
+    <system:String x:Key="String.Strategy.SelectFileToPreview">Select a file to preview</system:String>
+    <system:String x:Key="String.Strategy.Load">Load</system:String>
+    <system:String x:Key="String.Strategy.CurrentStrategy">Current Strategy:</system:String>
+    <system:String x:Key="String.Strategy.BuiltIn">Built-in (DualMA)</system:String>
+    <system:String x:Key="String.Strategy.UseBuiltIn">Use Built-in</system:String>
+    <system:String x:Key="String.Browse">Browse...</system:String>
     
 </ResourceDictionary>

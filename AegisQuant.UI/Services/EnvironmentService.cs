@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Media;
@@ -47,6 +48,11 @@ public class EnvironmentService : INotifyPropertyChanged
 
     private TradingEnvironment _currentEnvironment = TradingEnvironment.Backtest;
     private bool _isLiveConfirmed;
+
+    /// <summary>
+    /// 是否已确认实盘模式
+    /// </summary>
+    public bool IsLiveConfirmed => _isLiveConfirmed;
 
     /// <summary>
     /// 当前运行环境

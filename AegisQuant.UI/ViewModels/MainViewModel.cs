@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using AegisQuant.Interop;
 using AegisQuant.UI.Models;
+using AegisQuant.UI.Strategy;
 
 namespace AegisQuant.UI.ViewModels;
 
@@ -147,6 +148,17 @@ public partial class MainViewModel : ObservableObject, IDisposable
     /// Peak equity for drawdown calculation.
     /// </summary>
     private double _peakEquity;
+
+    /// <summary>
+    /// External strategy loaded from file.
+    /// </summary>
+    private IStrategy? _externalStrategy;
+
+    /// <summary>
+    /// Name of the current strategy.
+    /// </summary>
+    [ObservableProperty]
+    private string _currentStrategyName = "Built-in (DualMA)";
 
     #endregion
 
@@ -328,6 +340,30 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 StatusMessage = $"Failed to export log: {ex.Message}";
             }
         }
+    }
+
+    /// <summary>
+    /// Sets an external strategy for backtesting.
+    /// </summary>
+    public void SetExternalStrategy(IStrategy strategy)
+    {
+        _externalStrategy = strategy;
+        CurrentStrategyName = strategy.Name;
+        _backtestService.SetExternalStrategy(strategy);
+        AddLog(LogLevel.Info, $"Loaded external strategy: {strategy.Name}");
+        StatusMessage = $"Strategy loaded: {strategy.Name}";
+    }
+
+    /// <summary>
+    /// Clears the external strategy and reverts to built-in.
+    /// </summary>
+    public void ClearExternalStrategy()
+    {
+        _externalStrategy = null;
+        CurrentStrategyName = "Built-in (DualMA)";
+        _backtestService.ClearExternalStrategy();
+        AddLog(LogLevel.Info, "Reverted to built-in strategy");
+        StatusMessage = "Using built-in strategy";
     }
 
     #endregion

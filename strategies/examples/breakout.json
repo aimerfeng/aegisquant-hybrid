@@ -1,0 +1,44 @@
+{
+  "$schema": "../schemas/strategy-schema.json",
+  "name": "Bollinger Bands Breakout Strategy",
+  "description": "Buy when price breaks above upper band, sell when price breaks below lower band",
+  "version": "1.0",
+  "parameters": {
+    "bb_period": {
+      "type": "int",
+      "default": 20,
+      "min": 5,
+      "max": 100,
+      "description": "Bollinger Bands period"
+    },
+    "bb_std": {
+      "type": "double",
+      "default": 2.0,
+      "min": 0.5,
+      "max": 4.0,
+      "description": "Standard deviation multiplier"
+    }
+  },
+  "indicators": [
+    {
+      "name": "bb_upper",
+      "type": "BB_UPPER",
+      "period": "$bb_period",
+      "stdDev": "$bb_std"
+    },
+    {
+      "name": "bb_lower",
+      "type": "BB_LOWER",
+      "period": "$bb_period",
+      "stdDev": "$bb_std"
+    }
+  ],
+  "rules": {
+    "buy": {
+      "condition": "$price > $bb_upper"
+    },
+    "sell": {
+      "condition": "$price < $bb_lower"
+    }
+  }
+}

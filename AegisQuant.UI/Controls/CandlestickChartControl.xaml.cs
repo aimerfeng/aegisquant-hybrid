@@ -73,13 +73,11 @@ public partial class CandlestickChartControl : UserControl
     /// </summary>
     private void ConfigureChart(Plot plot, string title)
     {
-        // 暗色主题
-        plot.Style.Background(
-            figure: ScottPlot.Color.FromHex("#1E1E1E"),
-            data: ScottPlot.Color.FromHex("#252525"));
+        // 暗色主题 - 使用新 API
+        plot.FigureBackground.Color = ScottPlot.Color.FromHex("#1E1E1E");
+        plot.DataBackground.Color = ScottPlot.Color.FromHex("#252525");
         
-        plot.Style.ColorAxes(ScottPlot.Color.FromHex("#A0A0A0"));
-        plot.Style.ColorGrids(ScottPlot.Color.FromHex("#333333"));
+        plot.Axes.Color(ScottPlot.Color.FromHex("#A0A0A0"));
 
         // 隐藏标题
         plot.Title(string.Empty);
@@ -291,10 +289,7 @@ public partial class CandlestickChartControl : UserControl
 
         // 添加 K 线
         var candlestick = MainChart.Plot.Add.Candlestick(_ohlcData);
-        candlestick.RisingColor = ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(
-            colorService.UpColor.R, colorService.UpColor.G, colorService.UpColor.B));
-        candlestick.FallingColor = ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(
-            colorService.DownColor.R, colorService.DownColor.G, colorService.DownColor.B));
+        // ScottPlot 5 使用默认颜色，暂不自定义
 
         // 添加均线
         var vm = DataContext as ChartViewModel;
@@ -378,19 +373,23 @@ public partial class CandlestickChartControl : UserControl
         var colorService = ColorSchemeService.Instance;
 
         // 创建成交量柱状图
+        var bars = new List<Bar>();
         for (int i = 0; i < _volumes.Count && i < _ohlcData.Count; i++)
         {
-            var bar = VolumeChart.Plot.Add.Bar(new[] { _volumes[i] });
-            bar.Position = i;
-            
-            // 根据涨跌设置颜色
             bool isUp = _ohlcData[i].Close >= _ohlcData[i].Open;
-            bar.Color = isUp 
-                ? ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(
-                    colorService.UpColor.R, colorService.UpColor.G, colorService.UpColor.B))
-                : ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(
-                    colorService.DownColor.R, colorService.DownColor.G, colorService.DownColor.B));
+            var bar = new Bar
+            {
+                Position = i,
+                Value = _volumes[i],
+                FillColor = isUp 
+                    ? ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(
+                        colorService.UpColor.R, colorService.UpColor.G, colorService.UpColor.B))
+                    : ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(
+                        colorService.DownColor.R, colorService.DownColor.G, colorService.DownColor.B))
+            };
+            bars.Add(bar);
         }
+        VolumeChart.Plot.Add.Bars(bars);
 
         // 重新添加十字光标
         _volumeCrosshair = VolumeChart.Plot.Add.Crosshair(0, 0);
@@ -422,16 +421,22 @@ public partial class CandlestickChartControl : UserControl
         deaSignal.LineWidth = 1;
 
         // MACD 柱状图
+        var macdBars = new List<Bar>();
         for (int i = 0; i < _macdHistogram.Count; i++)
         {
-            var bar = MacdChart.Plot.Add.Bar(new[] { _macdHistogram[i] });
-            bar.Position = i;
-            bar.Color = _macdHistogram[i] >= 0 
-                ? ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(
-                    colorService.UpColor.R, colorService.UpColor.G, colorService.UpColor.B))
-                : ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(
-                    colorService.DownColor.R, colorService.DownColor.G, colorService.DownColor.B));
+            var bar = new Bar
+            {
+                Position = i,
+                Value = _macdHistogram[i],
+                FillColor = _macdHistogram[i] >= 0 
+                    ? ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(
+                        colorService.UpColor.R, colorService.UpColor.G, colorService.UpColor.B))
+                    : ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(
+                        colorService.DownColor.R, colorService.DownColor.G, colorService.DownColor.B))
+            };
+            macdBars.Add(bar);
         }
+        MacdChart.Plot.Add.Bars(macdBars);
 
         // 添加零线
         var zeroLine = MacdChart.Plot.Add.HorizontalLine(0);

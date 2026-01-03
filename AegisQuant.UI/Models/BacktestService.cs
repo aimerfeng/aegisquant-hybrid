@@ -1,4 +1,6 @@
 using AegisQuant.Interop;
+using AegisQuant.UI.Strategy;
+using AegisQuant.UI.Services;
 
 namespace AegisQuant.UI.Models;
 
@@ -58,8 +60,26 @@ public class BacktestCompletedEventArgs : EventArgs
 }
 
 /// <summary>
+/// Event arguments for strategy signal generation.
+/// </summary>
+public class StrategySignalEventArgs : EventArgs
+{
+    public Signal Signal { get; }
+    public double Price { get; }
+    public long Timestamp { get; }
+
+    public StrategySignalEventArgs(Signal signal, double price, long timestamp)
+    {
+        Signal = signal;
+        Price = price;
+        Timestamp = timestamp;
+    }
+}
+
+/// <summary>
 /// Service for managing backtest operations.
 /// Encapsulates EngineWrapper calls and provides async execution.
+/// Supports both built-in Rust strategies and external C#/Python strategies.
 /// </summary>
 public class BacktestService : IDisposable
 {
@@ -67,6 +87,11 @@ public class BacktestService : IDisposable
     private CancellationTokenSource? _cancellationTokenSource;
     private bool _disposed;
     private bool _isRunning;
+
+    // Strategy management
+    private readonly StrategyManagerService _strategyManager;
+    private readonly StrategyContext _strategyContext;
+    private bool _useExternalStrategy;
 
     /// <summary>
     /// Event raised when account status is updated during backtest.
@@ -84,12 +109,17 @@ public class BacktestService : IDisposable
     public event EventHandler<BacktestCompletedEventArgs>? OnBacktestCompleted;
 
     /// <summary>
+    /// Event raised when an external strategy generates a signal.
+    /// </summary>
+    public event EventHandler<StrategySignalEventArgs>? OnStrategySignal;
+
+    /// <summary>
     /// Gets whether a backtest is currently running.
     /// </summary>
     public bool IsRunning => _isRunning;
 
     /// <summary>
-    /// Gets the current strategy parameters.
+    /// Gets the current strategy parameters (for built-in strategy).
     /// </summary>
     public StrategyParams CurrentParams { get; private set; } = StrategyParams.Default;
 
@@ -102,6 +132,31 @@ public class BacktestService : IDisposable
     /// Gets the data quality report from the last data load.
     /// </summary>
     public DataQualityReport? LastDataQualityReport { get; private set; }
+
+    /// <summary>
+    /// Gets the strategy manager service.
+    /// </summary>
+    public StrategyManagerService StrategyManager => _strategyManager;
+
+    /// <summary>
+    /// Gets whether an external strategy is being used.
+    /// </summary>
+    public bool UseExternalStrategy => _useExternalStrategy;
+
+    /// <summary>
+    /// Gets the current external strategy name, or null if using built-in.
+    /// </summary>
+    public string? CurrentStrategyName => _strategyManager.CurrentStrategy?.Name;
+
+    public BacktestService()
+    {
+        _strategyManager = new StrategyManagerService();
+        _strategyContext = new StrategyContext();
+
+        // Subscribe to strategy events
+        _strategyManager.StrategyLoaded += OnExternalStrategyLoaded;
+        _strategyManager.StrategyError += OnExternalStrategyError;
+    }
 
     /// <summary>
     /// Initializes the engine with the specified parameters.
@@ -128,6 +183,58 @@ public class BacktestService : IDisposable
     }
 
     /// <summary>
+    /// Loads an external strategy from a file.
+    /// </summary>
+    /// <param name="filePath">Path to the strategy file (.json or .py)</param>
+    public async Task LoadExternalStrategyAsync(string filePath)
+    {
+        ThrowIfDisposed();
+
+        RaiseLog(LogLevel.Info, $"Loading external strategy from: {filePath}");
+
+        try
+        {
+            await _strategyManager.LoadFromFileAsync(filePath);
+            _useExternalStrategy = true;
+            RaiseLog(LogLevel.Info, $"External strategy loaded: {_strategyManager.CurrentStrategy?.Name}");
+        }
+        catch (Exception ex)
+        {
+            RaiseLog(LogLevel.Error, $"Failed to load strategy: {ex.Message}");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Switches back to using the built-in Rust strategy.
+    /// </summary>
+    public void UseBuiltInStrategy()
+    {
+        _strategyManager.UnloadStrategy();
+        _useExternalStrategy = false;
+        RaiseLog(LogLevel.Info, "Switched to built-in DualMA strategy");
+    }
+
+    /// <summary>
+    /// Sets an external strategy for backtesting.
+    /// </summary>
+    /// <param name="strategy">The strategy to use</param>
+    public void SetExternalStrategy(IStrategy strategy)
+    {
+        _strategyManager.SetStrategy(strategy);
+        _useExternalStrategy = true;
+        RaiseLog(LogLevel.Info, $"External strategy set: {strategy.Name}");
+    }
+
+    /// <summary>
+    /// Clears the external strategy and reverts to built-in.
+    /// </summary>
+    public void ClearExternalStrategy()
+    {
+        UseBuiltInStrategy();
+    }
+
+    /// <summary>
     /// Loads data from a file asynchronously.
     /// </summary>
     /// <param name="filePath">Path to the data file (CSV or Parquet)</param>
@@ -143,6 +250,9 @@ public class BacktestService : IDisposable
         var report = await Task.Run(() => _engine!.LoadData(filePath));
 
         LastDataQualityReport = report;
+
+        // Reset strategy context for new data
+        _strategyContext.Reset();
 
         RaiseLog(LogLevel.Info, $"Data loaded: {report.ValidTicks} valid ticks, {report.InvalidTicks} invalid, {report.AnomalyTicks} anomalies");
 
@@ -309,9 +419,57 @@ public class BacktestService : IDisposable
         if (!_disposed)
         {
             StopBacktest();
+            _strategyManager.StrategyLoaded -= OnExternalStrategyLoaded;
+            _strategyManager.StrategyError -= OnExternalStrategyError;
+            _strategyManager.Dispose();
             _engine?.Dispose();
             _engine = null;
             _disposed = true;
+        }
+    }
+
+    private void OnExternalStrategyLoaded(object? sender, StrategyLoadedEventArgs e)
+    {
+        RaiseLog(LogLevel.Info, $"Strategy loaded: {e.Strategy.Name} ({e.Strategy.Type})");
+    }
+
+    private void OnExternalStrategyError(object? sender, StrategyErrorEventArgs e)
+    {
+        RaiseLog(LogLevel.Error, $"Strategy error: {e.Message}");
+    }
+
+    /// <summary>
+    /// Processes a single tick with the external strategy.
+    /// </summary>
+    /// <param name="tick">Tick data to process</param>
+    /// <returns>Signal generated by the strategy</returns>
+    public Signal ProcessTickWithExternalStrategy(Tick tick)
+    {
+        if (!_useExternalStrategy || _strategyManager.CurrentStrategy == null)
+        {
+            return Signal.None;
+        }
+
+        try
+        {
+            // Update strategy context
+            _strategyContext.UpdateTick(tick);
+            _strategyContext.UpdateAccount(_engine?.GetAccountStatus() ?? new AccountStatus());
+
+            // Get signal from external strategy
+            var signal = _strategyManager.ProcessTick(_strategyContext);
+
+            if (signal != Signal.None)
+            {
+                OnStrategySignal?.Invoke(this, new StrategySignalEventArgs(signal, tick.Price, tick.Timestamp));
+            }
+
+            return signal;
+        }
+        catch (Exception ex)
+        {
+            RaiseLog(LogLevel.Error, $"External strategy error: {ex.Message}");
+            return Signal.None;
         }
     }
 }

@@ -30,7 +30,7 @@ public delegate void StringWithLenCallback(IntPtr message, int length);
 /// <summary>
 /// P/Invoke declarations for the Rust aegisquant_core library.
 /// </summary>
-internal static partial class NativeMethods
+public static partial class NativeMethods
 {
     private const string DllName = "aegisquant_core";
 
