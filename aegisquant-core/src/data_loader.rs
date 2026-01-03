@@ -13,6 +13,7 @@ use std::path::Path;
 
 use crate::error::{EngineError, EngineResult};
 use crate::types::{DataQualityReport, Tick};
+use crate::data_pipeline::{DataPipeline, PipelineConfig};
 
 /// Result of data cleansing operation.
 #[derive(Debug)]
@@ -26,23 +27,49 @@ pub struct CleansingResult {
 }
 
 /// Data loader for loading and cleansing tick data.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct DataLoader {
     /// Price jump threshold (default 10%)
     price_jump_threshold: f64,
+    /// Advanced data pipeline for institutional-grade cleansing
+    pipeline: DataPipeline,
+    /// Whether to use advanced pipeline preprocessing
+    use_advanced_pipeline: bool,
+}
+
+impl Default for DataLoader {
+    fn default() -> Self {
+        Self {
+            price_jump_threshold: 0.10,
+            pipeline: DataPipeline::new(PipelineConfig::default()),
+            use_advanced_pipeline: false, // Disabled by default for backward compatibility
+        }
+    }
 }
 
 impl DataLoader {
     /// Create a new DataLoader with default settings.
     pub fn new() -> Self {
-        Self {
-            price_jump_threshold: 0.10, // 10% price jump threshold
-        }
+        Self::default()
     }
 
     /// Set the price jump threshold for anomaly detection.
     pub fn with_price_jump_threshold(mut self, threshold: f64) -> Self {
         self.price_jump_threshold = threshold;
+        self
+    }
+
+    /// Enable advanced pipeline preprocessing (Z-Score outlier detection, forward fill, etc.)
+    pub fn with_advanced_pipeline(mut self, config: PipelineConfig) -> Self {
+        self.pipeline = DataPipeline::new(config);
+        self.use_advanced_pipeline = true;
+        self
+    }
+
+    /// Enable advanced pipeline with default configuration
+    pub fn with_default_advanced_pipeline(mut self) -> Self {
+        self.pipeline = DataPipeline::new(PipelineConfig::default());
+        self.use_advanced_pipeline = true;
         self
     }
 
@@ -112,13 +139,22 @@ impl DataLoader {
 
     /// Process DataFrame and perform data cleansing.
     fn process_dataframe(&self, df: DataFrame) -> EngineResult<CleansingResult> {
-        // Validate required columns
+        // Validate required columns first
         self.validate_columns(&df)?;
 
+        // Apply advanced pipeline preprocessing if enabled
+        let cleaned_df = if self.use_advanced_pipeline {
+            // Use the advanced pipeline for institutional-grade cleansing
+            // This handles: sorting, deduplication, forward fill, outlier detection
+            self.pipeline.clean(df)?
+        } else {
+            df
+        };
+
         // Extract columns with proper error handling
-        let timestamps = self.extract_i64_column(&df, "timestamp")?;
-        let prices = self.extract_f64_column(&df, "price")?;
-        let volumes = self.extract_f64_column(&df, "volume")?;
+        let timestamps = self.extract_i64_column(&cleaned_df, "timestamp")?;
+        let prices = self.extract_f64_column(&cleaned_df, "price")?;
+        let volumes = self.extract_f64_column(&cleaned_df, "volume")?;
 
         let total_ticks = timestamps.len() as i64;
         let mut valid_ticks = Vec::with_capacity(timestamps.len());

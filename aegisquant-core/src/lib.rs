@@ -11,6 +11,7 @@ pub mod precision;
 pub mod risk;
 pub mod gateway;
 pub mod data_loader;
+pub mod data_pipeline;
 pub mod strategy;
 pub mod engine;
 pub mod logger;
@@ -96,4 +97,8 @@ pub use latency::{
     set_latency_sample_rate, set_latency_enabled,
     get_latency_stats_ffi, reset_latency_stats_ffi,
     set_latency_sample_rate_ffi, set_latency_enabled_ffi,
+};
+pub use data_pipeline::{
+    DataPipeline, PipelineConfig, MarketDataStore,
+    TimescaleDbStore, CsvFileStore, ParquetFileStore,
 };
