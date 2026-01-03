@@ -2,6 +2,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using AegisQuant.UI.Controls;
 using AegisQuant.UI.Services;
 using AegisQuant.UI.Strategy;
 using AegisQuant.UI.ViewModels;
@@ -16,12 +17,14 @@ public partial class MainWindow : Window
 {
     private MainViewModel? _viewModel;
     private readonly StrategyManagerService _strategyManager;
+    private readonly MultiStrategyManagerService _multiStrategyManager;
     private IStrategy? _currentStrategy;
     
     // UI elements (defined here for compatibility)
     private TextBlock? CurrentStrategyNameText => FindName("CurrentStrategyNameText") as TextBlock;
     private TextBlock? CurrentStrategyTypeText => FindName("CurrentStrategyTypeText") as TextBlock;
     private Button? UseBuiltInButton => FindName("UseBuiltInButton") as Button;
+    private StrategyListPanel? StrategyListPanelControl => FindName("StrategyListPanel") as StrategyListPanel;
 
     public MainWindow()
     {
@@ -33,6 +36,14 @@ public partial class MainWindow : Window
         // Initialize services
         EnvironmentService.Instance.Initialize();
         _strategyManager = new StrategyManagerService();
+        _multiStrategyManager = new MultiStrategyManagerService();
+
+        // Wire up the strategy list panel
+        if (StrategyListPanelControl != null)
+        {
+            StrategyListPanelControl.StrategyManager = _multiStrategyManager;
+            StrategyListPanelControl.StrategySelected += OnStrategySelected;
+        }
 
         // Set up chart
         SetupChart();
@@ -42,6 +53,22 @@ public partial class MainWindow : Window
         {
             _viewModel.EquityCurve.CollectionChanged += EquityCurve_CollectionChanged;
         }
+    }
+
+    private void OnStrategySelected(object? sender, Strategy.Models.ManagedStrategy? strategy)
+    {
+        if (strategy == null) return;
+        
+        // Update the current strategy display when a strategy is selected from the list
+        if (CurrentStrategyNameText != null)
+            CurrentStrategyNameText.Text = strategy.Strategy.Name;
+        if (CurrentStrategyTypeText != null)
+            CurrentStrategyTypeText.Text = strategy.Strategy.Type switch
+            {
+                StrategyType.JsonConfig => "JSON Configuration",
+                StrategyType.PythonScript => "Python Script",
+                _ => "External"
+            };
     }
 
     private void SetupChart()
@@ -160,6 +187,13 @@ public partial class MainWindow : Window
     {
         // Clean up resources
         _currentStrategy?.Dispose();
+        _multiStrategyManager?.Dispose();
+        
+        // Unsubscribe from events
+        if (StrategyListPanelControl != null)
+        {
+            StrategyListPanelControl.StrategySelected -= OnStrategySelected;
+        }
         
         if (_viewModel != null)
         {

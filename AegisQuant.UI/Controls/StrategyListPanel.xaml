@@ -3,11 +3,20 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:converters="clr-namespace:AegisQuant.UI.Converters"
              mc:Ignorable="d" 
-             d:DesignHeight="400" d:DesignWidth="350"
-             Background="{DynamicResource BackgroundBrush}">
+             d:DesignHeight="400" d:DesignWidth="350">
     
-    <Grid>
+    <UserControl.Resources>
+        <converters:IsPositiveConverter x:Key="IsPositiveConverter"/>
+        <converters:IsNegativeConverter x:Key="IsNegativeConverter"/>
+        <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
+    </UserControl.Resources>
+    
+    <Border Background="{DynamicResource SurfaceBrush}" 
+            BorderBrush="{DynamicResource BorderBrush}" 
+            BorderThickness="1" CornerRadius="4">
+        <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -44,7 +53,8 @@
                  Background="Transparent" BorderThickness="0"
                  ItemsSource="{Binding Strategies}"
                  SelectionChanged="StrategyListBox_SelectionChanged"
-                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 Visibility="Collapsed">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <Border Background="{DynamicResource CardBrush}" 
@@ -146,7 +156,7 @@
                    TextAlignment="Center" 
                    Foreground="{DynamicResource SecondaryTextBrush}"
                    VerticalAlignment="Center" HorizontalAlignment="Center"
-                   Visibility="Collapsed"/>
+                   Visibility="Visible"/>
         
         <!-- Footer with aggregation mode -->
         <Border Grid.Row="2" Background="{DynamicResource CardBrush}" 
@@ -172,4 +182,5 @@
             </Grid>
         </Border>
     </Grid>
+    </Border>
 </UserControl>
