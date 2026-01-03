@@ -16,6 +16,11 @@ public sealed class EngineWrapper : IDisposable
     private bool _disposed;
 
     /// <summary>
+    /// Lock object for thread-safe callback management.
+    /// </summary>
+    private readonly object _callbackLock = new();
+
+    /// <summary>
     /// CRITICAL: Keep delegate reference to prevent GC collection.
     /// When Rust calls the callback, if the delegate has been GC'd,
     /// it will cause an access violation crash.
@@ -218,21 +223,24 @@ public sealed class EngineWrapper : IDisposable
     {
         if (!_disposed)
         {
-            // CRITICAL: Clear the log callback in Rust BEFORE releasing the delegate reference.
-            // This ensures Rust won't try to call a GC'd delegate.
-            if (_logCallbackKeepAlive != null)
+            // Use lock to prevent race condition with callback invocation
+            lock (_callbackLock)
             {
-                NativeMethods.ClearLogCallback();
+                // CRITICAL: Clear the log callback in Rust BEFORE releasing the delegate reference.
+                // This ensures Rust won't try to call a GC'd delegate.
+                if (_logCallbackKeepAlive != null)
+                {
+                    NativeMethods.ClearLogCallback();
+                    _logCallbackKeepAlive = null;
+                }
+
+                _stringCallbackKeepAlive = null;
+                _logHandler = null;
             }
 
-            // Release the native handle
+            // Release the native handle (outside lock to avoid potential deadlock)
             _handle?.Dispose();
             _handle = null;
-
-            // Clear callback references AFTER clearing in Rust
-            _logCallbackKeepAlive = null;
-            _stringCallbackKeepAlive = null;
-            _logHandler = null;
 
             _disposed = true;
         }
@@ -245,9 +253,12 @@ public sealed class EngineWrapper : IDisposable
     {
         ThrowIfDisposed();
         
-        NativeMethods.ClearLogCallback();
-        _logCallbackKeepAlive = null;
-        _logHandler = null;
+        lock (_callbackLock)
+        {
+            NativeMethods.ClearLogCallback();
+            _logCallbackKeepAlive = null;
+            _logHandler = null;
+        }
     }
 
     /// <summary>

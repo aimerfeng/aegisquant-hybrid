@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -18,6 +18,7 @@ public partial class StrategyEditorWindow : Window
     private readonly PythonStrategyLoader _pythonLoader;
     private bool _isModified;
     private string? _currentFilePath;
+    private bool _isInitialized;
 
     /// <summary>
     /// Gets the created strategy after successful load.
@@ -34,14 +35,22 @@ public partial class StrategyEditorWindow : Window
         InitializeComponent();
         _jsonLoader = new JsonStrategyLoader();
         _pythonLoader = new PythonStrategyLoader();
-        
-        // Set default template
-        TemplateComboBox.SelectedIndex = 0;
-        LoadTemplate("blank");
+
+        try
+        {
+            // Set default template
+            TemplateComboBox.SelectedIndex = 0;
+            LoadTemplate("blank");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"初始化错误: {ex.Message}\n{ex.StackTrace}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void StrategyTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (!IsLoaded) return;  // 防止初始化期间触发
         if (StrategyTypeComboBox.SelectedItem is ComboBoxItem item && item.Tag is string type)
         {
             UpdateEditorForType(type);
@@ -51,6 +60,7 @@ public partial class StrategyEditorWindow : Window
 
     private void UpdateEditorForType(string type)
     {
+        if (EditorTitleText == null || JsonHelpPanel == null || PythonHelpPanel == null) return;
         if (type == "json")
         {
             EditorTitleText.Text = "JSON 策略代码";
@@ -67,6 +77,7 @@ public partial class StrategyEditorWindow : Window
 
     private void TemplateComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (!IsLoaded) return;  // 防止初始化期间触发
         if (TemplateComboBox.SelectedItem is ComboBoxItem item && item.Tag is string template)
         {
             if (_isModified)

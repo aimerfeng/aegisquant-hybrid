@@ -43,18 +43,33 @@ public unsafe struct OrderRequest
     /// <summary>
     /// Sets the symbol from a string.
     /// </summary>
+    /// <exception cref="ArgumentException">Thrown if symbol is too long for UTF-8 encoding</exception>
     public void SetSymbol(string symbol)
     {
+        if (string.IsNullOrEmpty(symbol))
+        {
+            fixed (byte* ptr = Symbol)
+            {
+                for (int i = 0; i < 16; i++)
+                    ptr[i] = 0;
+            }
+            return;
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(symbol);
+        if (bytes.Length > 15)
+        {
+            throw new ArgumentException($"Symbol '{symbol}' is too long. UTF-8 encoded length ({bytes.Length}) exceeds maximum of 15 bytes.", nameof(symbol));
+        }
+
         fixed (byte* ptr = Symbol)
         {
             // Clear the buffer first
             for (int i = 0; i < 16; i++)
                 ptr[i] = 0;
 
-            // Copy symbol bytes (max 15 chars + null terminator)
-            var bytes = System.Text.Encoding.UTF8.GetBytes(symbol);
-            int len = Math.Min(bytes.Length, 15);
-            for (int i = 0; i < len; i++)
+            // Copy symbol bytes
+            for (int i = 0; i < bytes.Length; i++)
                 ptr[i] = bytes[i];
         }
     }
@@ -96,16 +111,31 @@ public unsafe struct Position
     /// <summary>
     /// Sets the symbol from a string.
     /// </summary>
+    /// <exception cref="ArgumentException">Thrown if symbol is too long for UTF-8 encoding</exception>
     public void SetSymbol(string symbol)
     {
+        if (string.IsNullOrEmpty(symbol))
+        {
+            fixed (byte* ptr = Symbol)
+            {
+                for (int i = 0; i < 16; i++)
+                    ptr[i] = 0;
+            }
+            return;
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(symbol);
+        if (bytes.Length > 15)
+        {
+            throw new ArgumentException($"Symbol '{symbol}' is too long. UTF-8 encoded length ({bytes.Length}) exceeds maximum of 15 bytes.", nameof(symbol));
+        }
+
         fixed (byte* ptr = Symbol)
         {
             for (int i = 0; i < 16; i++)
                 ptr[i] = 0;
 
-            var bytes = System.Text.Encoding.UTF8.GetBytes(symbol);
-            int len = Math.Min(bytes.Length, 15);
-            for (int i = 0; i < len; i++)
+            for (int i = 0; i < bytes.Length; i++)
                 ptr[i] = bytes[i];
         }
     }

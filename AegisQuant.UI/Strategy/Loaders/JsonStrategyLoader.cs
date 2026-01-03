@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 using AegisQuant.UI.Strategy.Models;
 
 namespace AegisQuant.UI.Strategy.Loaders;
@@ -91,18 +92,25 @@ public class JsonRuleConfig
 /// <summary>
 /// Loads strategies from JSON configuration files.
 /// </summary>
-public class JsonStrategyLoader
+public class JsonStrategyLoader : IStrategyLoader
 {
     private static readonly HashSet<string> SupportedIndicators = new(StringComparer.OrdinalIgnoreCase)
     {
         "SMA", "EMA", "RSI", "MACD", "BollingerBands", "BB", "ATR", "Stochastic", "STOCH"
     };
 
-    /// <summary>
-    /// Loads a strategy from a JSON file.
-    /// </summary>
-    /// <param name="filePath">Path to the JSON file</param>
-    /// <returns>Loaded strategy</returns>
+    /// <inheritdoc />
+    public string[] SupportedExtensions => new[] { ".json" };
+
+    /// <inheritdoc />
+    public bool CanLoad(string filePath)
+    {
+        if (string.IsNullOrEmpty(filePath)) return false;
+        var ext = Path.GetExtension(filePath).ToLowerInvariant();
+        return ext == ".json";
+    }
+
+    /// <inheritdoc />
     public IStrategy LoadFromFile(string filePath)
     {
         if (!File.Exists(filePath))
@@ -233,6 +241,77 @@ public class JsonStrategyLoader
         return errors.Count > 0
             ? new ValidationResult { IsValid = false, Errors = errors }
             : ValidationResult.Success();
+    }
+
+    /// <inheritdoc />
+    public ValidationResult Validate(string content)
+    {
+        try
+        {
+            var config = JsonSerializer.Deserialize<JsonStrategyConfig>(content, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                AllowTrailingCommas = true,
+                ReadCommentHandling = JsonCommentHandling.Skip
+            });
+
+            if (config == null)
+            {
+                return new ValidationResult
+                {
+                    IsValid = false,
+                    Errors = new List<ValidationError>
+                    {
+                        new() { Code = "PARSE_ERROR", Message = "Failed to parse JSON" }
+                    }
+                };
+            }
+
+            return ValidateConfig(config);
+        }
+        catch (JsonException ex)
+        {
+            return new ValidationResult
+            {
+                IsValid = false,
+                Errors = new List<ValidationError>
+                {
+                    new() { Code = "JSON_SYNTAX", Message = ex.Message }
+                }
+            };
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<StrategyInfo?> GetStrategyInfoAsync(string filePath)
+    {
+        try
+        {
+            if (!File.Exists(filePath)) return null;
+
+            var json = await File.ReadAllTextAsync(filePath);
+            var config = JsonSerializer.Deserialize<JsonStrategyConfig>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                AllowTrailingCommas = true,
+                ReadCommentHandling = JsonCommentHandling.Skip
+            });
+
+            if (config == null) return null;
+
+            return new StrategyInfo
+            {
+                Name = config.Name,
+                Description = config.Description,
+                Type = StrategyType.JsonConfig,
+                Version = config.Version,
+                FilePath = filePath
+            };
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static int GetLineNumber(string json, long bytePosition)

@@ -99,6 +99,7 @@
     <system:String x:Key="String.Strategy.SelectFileToPreview">Select a file to preview</system:String>
     <system:String x:Key="String.Strategy.Load">Load</system:String>
     <system:String x:Key="String.Strategy.CurrentStrategy">Current Strategy:</system:String>
+    <system:String x:Key="String.Strategy.Model">Strategy Model</system:String>
     <system:String x:Key="String.Strategy.BuiltIn">Built-in (DualMA)</system:String>
     <system:String x:Key="String.Strategy.UseBuiltIn">Use Built-in</system:String>
     <system:String x:Key="String.Browse">Browse...</system:String>

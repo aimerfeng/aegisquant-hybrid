@@ -99,6 +99,7 @@
     <system:String x:Key="String.Strategy.SelectFileToPreview">选择文件以预览</system:String>
     <system:String x:Key="String.Strategy.Load">加载</system:String>
     <system:String x:Key="String.Strategy.CurrentStrategy">当前策略:</system:String>
+    <system:String x:Key="String.Strategy.Model">策略模型</system:String>
     <system:String x:Key="String.Strategy.BuiltIn">内置策略 (双均线)</system:String>
     <system:String x:Key="String.Strategy.UseBuiltIn">使用内置策略</system:String>
     <system:String x:Key="String.Browse">浏览...</system:String>

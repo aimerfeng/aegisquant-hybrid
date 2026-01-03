@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using AegisQuant.UI.Services;
 using AegisQuant.UI.Strategy.Models;
 using Python.Runtime;
@@ -11,7 +12,7 @@ namespace AegisQuant.UI.Strategy.Loaders;
 /// <summary>
 /// Loads strategies from Python script files.
 /// </summary>
-public class PythonStrategyLoader
+public class PythonStrategyLoader : IStrategyLoader
 {
     private readonly PythonRuntimeService _pythonRuntime;
     private bool _initialized;
@@ -30,6 +31,17 @@ public class PythonStrategyLoader
     public PythonStrategyLoader()
     {
         _pythonRuntime = PythonRuntimeService.Instance;
+    }
+
+    /// <inheritdoc />
+    public string[] SupportedExtensions => new[] { ".py" };
+
+    /// <inheritdoc />
+    public bool CanLoad(string filePath)
+    {
+        if (string.IsNullOrEmpty(filePath)) return false;
+        var ext = Path.GetExtension(filePath).ToLowerInvariant();
+        return ext == ".py";
     }
 
     /// <summary>
@@ -178,6 +190,18 @@ public class PythonStrategyLoader
         return errors.Count > 0
             ? new ValidationResult { IsValid = false, Errors = errors }
             : ValidationResult.Success();
+    }
+
+    /// <inheritdoc />
+    public ValidationResult Validate(string content)
+    {
+        return ValidateCode(content);
+    }
+
+    /// <inheritdoc />
+    public async Task<StrategyInfo?> GetStrategyInfoAsync(string filePath)
+    {
+        return await Task.Run(() => GetStrategyInfo(filePath));
     }
 
     /// <summary>

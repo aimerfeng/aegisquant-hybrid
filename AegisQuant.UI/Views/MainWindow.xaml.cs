@@ -1,4 +1,4 @@
-using System.Collections.Specialized;
+﻿using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -136,15 +136,31 @@ public partial class MainWindow : Window
             if (CurrentStrategyTypeText != null)
                 CurrentStrategyTypeText.Text = _currentStrategy.Type switch
                 {
-                    StrategyType.JsonConfig => "JSON Configuration",
-                    StrategyType.PythonScript => "Python Script",
-                    _ => "External"
+                    StrategyType.JsonConfig => "JSON 配置策略",
+                    StrategyType.PythonScript => "Python 脚本策略",
+                    _ => "外部策略"
                 };
             if (UseBuiltInButton != null)
                 UseBuiltInButton.Visibility = Visibility.Visible;
 
             // Notify view model about strategy change
             _viewModel?.SetExternalStrategy(_currentStrategy);
+        }
+    }
+
+    private void NewStrategyButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var editorWindow = new StrategyEditorWindow()
+            {
+                Owner = this
+            };
+            editorWindow.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"打开策略编辑器失败:\n{ex.Message}\n\n{ex.StackTrace}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

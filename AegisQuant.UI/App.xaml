@@ -24,19 +24,49 @@
             <converters:BoolToUpDownColorConverter x:Key="BoolToUpDownColorConverter"/>
             <converters:RatioToWidthConverter x:Key="RatioToWidthConverter"/>
             
-            <!-- Application-wide styles -->
+            <!-- Application-wide styles with dark theme support -->
             <Style TargetType="Button">
                 <Setter Property="Padding" Value="12,6"/>
                 <Setter Property="Margin" Value="4"/>
+                <Setter Property="Background" Value="{DynamicResource CardBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
             </Style>
             
             <Style TargetType="TextBox">
                 <Setter Property="Padding" Value="4"/>
                 <Setter Property="Margin" Value="4"/>
+                <Setter Property="Background" Value="{DynamicResource CardBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                <Setter Property="CaretBrush" Value="{DynamicResource PrimaryTextBrush}"/>
             </Style>
             
             <Style TargetType="Label">
                 <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+            </Style>
+            
+            <Style TargetType="ComboBox">
+                <Setter Property="Background" Value="{DynamicResource CardBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            </Style>
+            
+            <Style TargetType="ListView">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            </Style>
+            
+            <Style TargetType="ScrollViewer">
+                <Setter Property="Background" Value="Transparent"/>
+            </Style>
+            
+            <Style TargetType="ProgressBar">
+                <Setter Property="Background" Value="{DynamicResource CardBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
             </Style>
         </ResourceDictionary>
     </Application.Resources>

@@ -54,6 +54,13 @@
                     <TextBlock Text="{DynamicResource LoadData}"/>
                 </Button>
                 <Separator/>
+                <Button Click="LoadStrategyButton_Click" ToolTip="加载外部策略文件">
+                    <TextBlock Text="加载策略" Foreground="Blue"/>
+                </Button>
+                <Button Click="NewStrategyButton_Click" ToolTip="创建新策略">
+                    <TextBlock Text="新建策略" Foreground="Blue"/>
+                </Button>
+                <Separator/>
                 <Button Command="{Binding StartBacktestCommand}" ToolTip="{DynamicResource StartTooltip}">
                     <TextBlock Text="{DynamicResource Start}" Foreground="Green"/>
                 </Button>
