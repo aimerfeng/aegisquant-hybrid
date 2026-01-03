@@ -268,3 +268,222 @@ public static class OrderType
     public const int Market = 0;
     public const int Limit = 1;
 }
+
+
+/// <summary>
+/// Maximum number of price levels in the order book.
+/// </summary>
+public static class OrderBookConstants
+{
+    public const int MaxLevels = 10;
+}
+
+/// <summary>
+/// Single price level in the order book.
+/// Matches Rust repr(C) OrderBookLevel struct.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+public struct OrderBookLevel
+{
+    /// <summary>Price at this level</summary>
+    public double Price;
+    /// <summary>Total quantity at this level</summary>
+    public double Quantity;
+    /// <summary>Number of orders at this level</summary>
+    public int OrderCount;
+}
+
+/// <summary>
+/// Order book snapshot containing bid and ask levels.
+/// Matches Rust repr(C) OrderBookSnapshot struct.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct OrderBookSnapshot
+{
+    /// <summary>Bid levels (buy orders), sorted by price descending</summary>
+    public fixed byte BidsData[10 * 20]; // 10 levels * sizeof(OrderBookLevel)
+    /// <summary>Ask levels (sell orders), sorted by price ascending</summary>
+    public fixed byte AsksData[10 * 20]; // 10 levels * sizeof(OrderBookLevel)
+    /// <summary>Number of valid bid levels</summary>
+    public int BidCount;
+    /// <summary>Number of valid ask levels</summary>
+    public int AskCount;
+    /// <summary>Last traded price</summary>
+    public double LastPrice;
+    /// <summary>Timestamp in nanoseconds</summary>
+    public long Timestamp;
+
+    /// <summary>
+    /// Gets the bid levels as an array.
+    /// </summary>
+    public OrderBookLevel[] GetBids()
+    {
+        var result = new OrderBookLevel[BidCount];
+        fixed (byte* ptr = BidsData)
+        {
+            var levels = (OrderBookLevel*)ptr;
+            for (int i = 0; i < BidCount && i < OrderBookConstants.MaxLevels; i++)
+            {
+                result[i] = levels[i];
+            }
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Gets the ask levels as an array.
+    /// </summary>
+    public OrderBookLevel[] GetAsks()
+    {
+        var result = new OrderBookLevel[AskCount];
+        fixed (byte* ptr = AsksData)
+        {
+            var levels = (OrderBookLevel*)ptr;
+            for (int i = 0; i < AskCount && i < OrderBookConstants.MaxLevels; i++)
+            {
+                result[i] = levels[i];
+            }
+        }
+        return result;
+    }
+}
+
+/// <summary>
+/// Order book statistics.
+/// Matches Rust repr(C) OrderBookStats struct.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+public struct OrderBookStats
+{
+    /// <summary>Total volume on bid side</summary>
+    public double TotalBidVolume;
+    /// <summary>Total volume on ask side</summary>
+    public double TotalAskVolume;
+    /// <summary>Spread (best ask - best bid)</summary>
+    public double Spread;
+    /// <summary>Spread in basis points</summary>
+    public double SpreadBps;
+    /// <summary>Bid/Ask volume ratio</summary>
+    public double BidAskRatio;
+    /// <summary>Total number of bid orders</summary>
+    public int TotalBidOrders;
+    /// <summary>Total number of ask orders</summary>
+    public int TotalAskOrders;
+    /// <summary>Number of bid levels</summary>
+    public int BidLevels;
+    /// <summary>Number of ask levels</summary>
+    public int AskLevels;
+}
+
+/// <summary>
+/// Indicator calculation result.
+/// Matches Rust repr(C) IndicatorResult struct.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+public struct IndicatorResult
+{
+    /// <summary>5-period moving average</summary>
+    public double Ma5;
+    /// <summary>10-period moving average</summary>
+    public double Ma10;
+    /// <summary>20-period moving average</summary>
+    public double Ma20;
+    /// <summary>60-period moving average</summary>
+    public double Ma60;
+    /// <summary>Bollinger Band upper</summary>
+    public double BollUpper;
+    /// <summary>Bollinger Band middle</summary>
+    public double BollMiddle;
+    /// <summary>Bollinger Band lower</summary>
+    public double BollLower;
+    /// <summary>MACD DIF line</summary>
+    public double MacdDif;
+    /// <summary>MACD DEA line (signal)</summary>
+    public double MacdDea;
+    /// <summary>MACD histogram</summary>
+    public double MacdHistogram;
+}
+
+
+/// <summary>
+/// Latency statistics structure.
+/// Matches Rust repr(C) LatencyStats struct.
+/// Requirements: 13.1, 13.2
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+public struct LatencyStats
+{
+    /// <summary>Minimum latency in nanoseconds</summary>
+    public ulong MinNs;
+    /// <summary>Maximum latency in nanoseconds</summary>
+    public ulong MaxNs;
+    /// <summary>Average latency in nanoseconds</summary>
+    public ulong AvgNs;
+    /// <summary>50th percentile (median) latency in nanoseconds</summary>
+    public ulong P50Ns;
+    /// <summary>95th percentile latency in nanoseconds</summary>
+    public ulong P95Ns;
+    /// <summary>99th percentile latency in nanoseconds</summary>
+    public ulong P99Ns;
+    /// <summary>Total number of samples</summary>
+    public ulong SampleCount;
+    /// <summary>Last recorded latency in nanoseconds</summary>
+    public ulong LastNs;
+
+    /// <summary>
+    /// Gets the minimum latency in microseconds.
+    /// </summary>
+    public double MinUs => MinNs / 1000.0;
+
+    /// <summary>
+    /// Gets the maximum latency in microseconds.
+    /// </summary>
+    public double MaxUs => MaxNs / 1000.0;
+
+    /// <summary>
+    /// Gets the average latency in microseconds.
+    /// </summary>
+    public double AvgUs => AvgNs / 1000.0;
+
+    /// <summary>
+    /// Gets the 50th percentile latency in microseconds.
+    /// </summary>
+    public double P50Us => P50Ns / 1000.0;
+
+    /// <summary>
+    /// Gets the 95th percentile latency in microseconds.
+    /// </summary>
+    public double P95Us => P95Ns / 1000.0;
+
+    /// <summary>
+    /// Gets the 99th percentile latency in microseconds.
+    /// </summary>
+    public double P99Us => P99Ns / 1000.0;
+
+    /// <summary>
+    /// Gets the last latency in microseconds.
+    /// </summary>
+    public double LastUs => LastNs / 1000.0;
+
+    /// <summary>
+    /// Formats the latency for display.
+    /// </summary>
+    public string FormatLatency(ulong ns)
+    {
+        if (ns < 1000)
+            return $"{ns}ns";
+        if (ns < 1_000_000)
+            return $"{ns / 1000.0:F1}μs";
+        return $"{ns / 1_000_000.0:F2}ms";
+    }
+
+    /// <summary>
+    /// Gets a formatted string of the last latency.
+    /// </summary>
+    public string LastFormatted => FormatLatency(LastNs);
+
+    /// <summary>
+    /// Gets a formatted string of the average latency.
+    /// </summary>
+    public string AvgFormatted => FormatLatency(AvgNs);
+}

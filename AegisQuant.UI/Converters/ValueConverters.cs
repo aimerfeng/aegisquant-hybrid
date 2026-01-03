@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
+using System.Windows.Media;
+using AegisQuant.UI.Services;
 
 namespace AegisQuant.UI.Converters;
 
@@ -75,6 +77,109 @@ public class IsNegativeConverter : IValueConverter
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+
+/// <summary>
+/// Converts a ratio (0-1) to a width value.
+/// ConverterParameter specifies the maximum width.
+/// </summary>
+public class RatioToWidthConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is double ratio)
+        {
+            double maxWidth = 200; // Default max width
+            if (parameter is string paramStr && double.TryParse(paramStr, out var parsed))
+            {
+                maxWidth = parsed;
+            }
+            else if (parameter is double paramDouble)
+            {
+                maxWidth = paramDouble;
+            }
+
+            // Clamp ratio between 0 and 1
+            ratio = Math.Max(0, Math.Min(1, ratio));
+            return ratio * maxWidth;
+        }
+        return 0.0;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts a price change value to a color brush.
+/// Positive = Up color, Negative = Down color, Zero = Flat color.
+/// </summary>
+public class PriceChangeToColorConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        double change = 0;
+        if (value is double d)
+        {
+            change = d;
+        }
+        else if (value is decimal dec)
+        {
+            change = (double)dec;
+        }
+
+        return ColorSchemeService.Instance.GetPriceChangeBrush(change);
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts a boolean to a color brush.
+/// True = Up color, False = Down color.
+/// </summary>
+public class BoolToUpDownColorConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is bool isUp)
+        {
+            var colorService = ColorSchemeService.Instance;
+            return isUp ? colorService.UpBrush : colorService.DownBrush;
+        }
+        return ColorSchemeService.Instance.FlatBrush;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts two values (current and reference) to a color brush.
+/// </summary>
+public class PriceToColorConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length >= 2 && values[0] is double current && values[1] is double reference)
+        {
+            return ColorSchemeService.Instance.GetPriceBrush(current, reference);
+        }
+        return ColorSchemeService.Instance.FlatBrush;
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
     {
         throw new NotImplementedException();
     }

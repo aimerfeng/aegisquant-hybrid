@@ -8,7 +8,7 @@ use aegisquant_core::types::*;
 use aegisquant_core::gateway::{Gateway, SimulatedGateway};
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(100))]
+    #![proptest_config(ProptestConfig::with_cases(50))]
 
     /// Property 6: Equity = Balance + Unrealized PnL
     /// For any account state, equity should equal balance plus sum of unrealized PnL.

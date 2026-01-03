@@ -8,6 +8,8 @@
             <ResourceDictionary.MergedDictionaries>
                 <!-- Default language (will be replaced at runtime) -->
                 <ResourceDictionary Source="Resources/Strings.en-US.xaml"/>
+                <!-- Default theme (will be replaced at runtime) -->
+                <ResourceDictionary Source="Resources/DarkTheme.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             
             <!-- Application-wide styles -->

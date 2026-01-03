@@ -1,0 +1,198 @@
+<UserControl x:Class="AegisQuant.UI.Controls.OrderBookControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:AegisQuant.UI.Controls"
+             xmlns:converters="clr-namespace:AegisQuant.UI.Converters"
+             mc:Ignorable="d" 
+             d:DesignHeight="350" d:DesignWidth="200"
+             Background="{DynamicResource SurfaceBrush}">
+    
+    <UserControl.Resources>
+        <converters:RatioToWidthConverter x:Key="RatioToWidthConverter"/>
+        <converters:PriceChangeToColorConverter x:Key="PriceChangeToColorConverter"/>
+        
+        <!-- 档位行样式 -->
+        <Style x:Key="LevelRowStyle" TargetType="Grid">
+            <Setter Property="Height" Value="22"/>
+            <Setter Property="Margin" Value="0,1"/>
+        </Style>
+        
+        <!-- 档位标签样式 -->
+        <Style x:Key="LevelLabelStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        
+        <!-- 价格样式 -->
+        <Style x:Key="PriceStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontFamily" Value="Consolas, Microsoft YaHei UI"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,4,0"/>
+        </Style>
+        
+        <!-- 数量样式 -->
+        <Style x:Key="QuantityStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontFamily" Value="Consolas, Microsoft YaHei UI"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,4,0"/>
+        </Style>
+    </UserControl.Resources>
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- 表头 -->
+        <Grid Grid.Row="0" Background="{DynamicResource CardBrush}" Height="22">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="40"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="档位" Style="{StaticResource LevelLabelStyle}"/>
+            <TextBlock Text="价格" Grid.Column="1" Style="{StaticResource LevelLabelStyle}" HorizontalAlignment="Right" Margin="0,0,4,0"/>
+            <TextBlock Text="数量" Grid.Column="2" Style="{StaticResource LevelLabelStyle}" HorizontalAlignment="Right" Margin="0,0,4,0"/>
+        </Grid>
+        
+        <!-- 卖盘 (卖5到卖1，从上到下) -->
+        <ItemsControl Grid.Row="1" ItemsSource="{Binding Asks}" VerticalAlignment="Bottom">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Grid Style="{StaticResource LevelRowStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <!-- 量能背景条 -->
+                        <Rectangle Grid.ColumnSpan="3" HorizontalAlignment="Right"
+                                   Fill="{DynamicResource AskBrush}" Opacity="0.15"
+                                   Width="{Binding QuantityRatio, Converter={StaticResource RatioToWidthConverter}, ConverterParameter=200}"/>
+                        
+                        <!-- 档位标签 -->
+                        <TextBlock Text="{Binding LevelName}" Style="{StaticResource LevelLabelStyle}"/>
+                        
+                        <!-- 价格 -->
+                        <local:FlashingTextBlock Grid.Column="1" 
+                                                  Value="{Binding Price}"
+                                                  ReferenceValue="{Binding DataContext.ReferencePrice, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                  Text="{Binding Price, StringFormat='{}{0:F2}'}"
+                                                  Style="{StaticResource PriceStyle}"
+                                                  Foreground="{DynamicResource AskBrush}"
+                                                  AutoColor="False"/>
+                        
+                        <!-- 数量 -->
+                        <TextBlock Grid.Column="2" 
+                                   Text="{Binding Quantity, StringFormat='{}{0:N0}'}"
+                                   Style="{StaticResource QuantityStyle}"/>
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        
+        <!-- 最新价区域 -->
+        <Border Grid.Row="2" Background="{DynamicResource CardBrush}" Padding="8,6" Margin="0,2">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- 最新价 -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Grid.ColumnSpan="2">
+                    <local:FlashingTextBlock Value="{Binding LastPrice}"
+                                              ReferenceValue="{Binding ReferencePrice}"
+                                              Text="{Binding LastPrice, StringFormat='{}{0:F2}'}"
+                                              FontSize="18" FontWeight="Bold"
+                                              AutoColor="True"/>
+                    
+                    <!-- 涨跌幅 -->
+                    <TextBlock Text="{Binding PriceChangePercent, StringFormat=' {0:+0.00%;-0.00%;0.00%}'}"
+                               Foreground="{Binding PriceChange, Converter={StaticResource PriceChangeToColorConverter}}"
+                               FontSize="12" VerticalAlignment="Bottom" Margin="5,0,0,3"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+        
+        <!-- 买盘 (买1到买5，从上到下) -->
+        <ItemsControl Grid.Row="3" ItemsSource="{Binding Bids}" VerticalAlignment="Top">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Grid Style="{StaticResource LevelRowStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <!-- 量能背景条 -->
+                        <Rectangle Grid.ColumnSpan="3" HorizontalAlignment="Right"
+                                   Fill="{DynamicResource BidBrush}" Opacity="0.15"
+                                   Width="{Binding QuantityRatio, Converter={StaticResource RatioToWidthConverter}, ConverterParameter=200}"/>
+                        
+                        <!-- 档位标签 -->
+                        <TextBlock Text="{Binding LevelName}" Style="{StaticResource LevelLabelStyle}"/>
+                        
+                        <!-- 价格 -->
+                        <local:FlashingTextBlock Grid.Column="1" 
+                                                  Value="{Binding Price}"
+                                                  ReferenceValue="{Binding DataContext.ReferencePrice, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                  Text="{Binding Price, StringFormat='{}{0:F2}'}"
+                                                  Style="{StaticResource PriceStyle}"
+                                                  Foreground="{DynamicResource BidBrush}"
+                                                  AutoColor="False"/>
+                        
+                        <!-- 数量 -->
+                        <TextBlock Grid.Column="2" 
+                                   Text="{Binding Quantity, StringFormat='{}{0:N0}'}"
+                                   Style="{StaticResource QuantityStyle}"/>
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        
+        <!-- 买卖统计 -->
+        <Grid Grid.Row="4" Background="{DynamicResource CardBrush}" Height="28">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- 买盘总量 -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="买:" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="10" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding TotalBidVolume, StringFormat='{}{0:N0}'}" 
+                           Foreground="{DynamicResource BidBrush}" FontSize="11" FontWeight="SemiBold"
+                           VerticalAlignment="Center" Margin="2,0,0,0"/>
+            </StackPanel>
+            
+            <!-- 分隔线 -->
+            <Rectangle Grid.Column="1" Width="1" Fill="{DynamicResource BorderBrush}" Margin="4,4"/>
+            
+            <!-- 卖盘总量 -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="卖:" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="10" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding TotalAskVolume, StringFormat='{}{0:N0}'}" 
+                           Foreground="{DynamicResource AskBrush}" FontSize="11" FontWeight="SemiBold"
+                           VerticalAlignment="Center" Margin="2,0,0,0"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

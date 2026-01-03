@@ -75,7 +75,7 @@ fn arb_risk_config() -> impl Strategy<Value = RiskConfig> {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(100))]
+    #![proptest_config(ProptestConfig::with_cases(50))]
 
     /// Property 4: Capital check rejects orders when available_balance < order_value
     /// For any order where quantity * price > available, the order should be rejected

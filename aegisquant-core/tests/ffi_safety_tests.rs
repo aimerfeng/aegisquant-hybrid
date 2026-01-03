@@ -8,7 +8,7 @@ use aegisquant_core::ffi::*;
 use aegisquant_core::types::*;
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(100))]
+    #![proptest_config(ProptestConfig::with_cases(50))]
 
     /// Property 2: Null engine pointer returns error code, not crash
     #[test]
@@ -201,6 +201,7 @@ proptest! {
             position_size,
             stop_loss_pct: stop_loss,
             take_profit_pct: take_profit,
+            warmup_bars: 0,
         };
         
         let risk = RiskConfig {

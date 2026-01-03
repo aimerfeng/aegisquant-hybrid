@@ -1,0 +1,111 @@
+<UserControl x:Class="AegisQuant.UI.Controls.CandlestickChartControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:scottplot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="800"
+             Background="{DynamicResource SurfaceBrush}">
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <!-- 指标选择面板 -->
+            <RowDefinition Height="Auto"/>
+            <!-- 主图: K线 + 均线 + 布林带 (60%) -->
+            <RowDefinition Height="6*"/>
+            <!-- 副图1: 成交量 (20%) -->
+            <RowDefinition Height="2*"/>
+            <!-- 副图2: MACD (20%) -->
+            <RowDefinition Height="2*"/>
+        </Grid.RowDefinitions>
+        
+        <!-- 指标选择面板 -->
+        <Border Grid.Row="0" Background="{DynamicResource CardBrush}" Padding="8,4" Margin="0,0,0,2">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="均线:" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}" 
+                           FontSize="11" Margin="0,0,4,0"/>
+                <CheckBox Content="MA5" IsChecked="{Binding ShowMa5}" Foreground="{DynamicResource PrimaryTextBrush}" 
+                          FontSize="11" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                <CheckBox Content="MA10" IsChecked="{Binding ShowMa10}" Foreground="{DynamicResource PrimaryTextBrush}" 
+                          FontSize="11" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                <CheckBox Content="MA20" IsChecked="{Binding ShowMa20}" Foreground="{DynamicResource PrimaryTextBrush}" 
+                          FontSize="11" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                <CheckBox Content="MA60" IsChecked="{Binding ShowMa60}" Foreground="{DynamicResource PrimaryTextBrush}" 
+                          FontSize="11" Margin="0,0,16,0" VerticalAlignment="Center"/>
+                
+                <Separator Style="{DynamicResource DarkSeparator}" Margin="0,2,8,2"/>
+                
+                <CheckBox Content="布林带" IsChecked="{Binding ShowBollinger}" Foreground="{DynamicResource PrimaryTextBrush}" 
+                          FontSize="11" Margin="0,0,16,0" VerticalAlignment="Center"/>
+                
+                <Separator Style="{DynamicResource DarkSeparator}" Margin="0,2,8,2"/>
+                
+                <CheckBox Content="买卖标记" IsChecked="{Binding ShowTradeMarkers}" Foreground="{DynamicResource PrimaryTextBrush}" 
+                          FontSize="11" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                
+                <Separator Style="{DynamicResource DarkSeparator}" Margin="0,2,8,2"/>
+                
+                <TextBlock Text="副图:" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}" 
+                           FontSize="11" Margin="0,0,4,0"/>
+                <ComboBox SelectedItem="{Binding SelectedSubIndicator}" Width="80" FontSize="11"
+                          Style="{DynamicResource DenseComboBox}">
+                    <ComboBoxItem Content="MACD"/>
+                    <ComboBoxItem Content="KDJ"/>
+                    <ComboBoxItem Content="RSI"/>
+                </ComboBox>
+            </StackPanel>
+        </Border>
+        
+        <!-- 主图: K线 + 均线 + 布林带 -->
+        <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,0,2">
+            <Grid>
+                <scottplot:WpfPlot x:Name="MainChart"/>
+                
+                <!-- 十字光标信息 -->
+                <Border x:Name="CrosshairInfo" Background="{DynamicResource CardBrush}" 
+                        Padding="8,4" CornerRadius="4" Opacity="0.9"
+                        HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8"
+                        Visibility="Collapsed">
+                    <StackPanel>
+                        <TextBlock x:Name="CrosshairTime" FontSize="10" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="O:" FontSize="10" Foreground="{DynamicResource SecondaryTextBrush}" Width="20"/>
+                            <TextBlock x:Name="CrosshairOpen" FontSize="10" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="H:" FontSize="10" Foreground="{DynamicResource SecondaryTextBrush}" Width="20"/>
+                            <TextBlock x:Name="CrosshairHigh" FontSize="10" Foreground="{DynamicResource UpBrush}"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="L:" FontSize="10" Foreground="{DynamicResource SecondaryTextBrush}" Width="20"/>
+                            <TextBlock x:Name="CrosshairLow" FontSize="10" Foreground="{DynamicResource DownBrush}"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="C:" FontSize="10" Foreground="{DynamicResource SecondaryTextBrush}" Width="20"/>
+                            <TextBlock x:Name="CrosshairClose" FontSize="10" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+        
+        <!-- 副图1: 成交量 -->
+        <Border Grid.Row="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,0,2">
+            <Grid>
+                <scottplot:WpfPlot x:Name="VolumeChart"/>
+                <TextBlock Text="VOL" FontSize="10" Foreground="{DynamicResource SecondaryTextBrush}"
+                           HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8,4"/>
+            </Grid>
+        </Border>
+        
+        <!-- 副图2: MACD -->
+        <Border Grid.Row="3" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+            <Grid>
+                <scottplot:WpfPlot x:Name="MacdChart"/>
+                <TextBlock Text="MACD(12,26,9)" FontSize="10" Foreground="{DynamicResource SecondaryTextBrush}"
+                           HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8,4"/>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

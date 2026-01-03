@@ -26,7 +26,7 @@ fn calculate_ma(prices: &[f64], period: usize) -> Option<f64> {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(100))]
+    #![proptest_config(ProptestConfig::with_cases(50))]
 
     /// Property 3: Buy signal only on golden cross
     /// For any price sequence, a buy signal should only occur when

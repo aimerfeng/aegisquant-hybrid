@@ -12,5 +12,8 @@ public partial class App : Application
     {
         // 初始化语言设置
         LocalizationService.Initialize();
+        
+        // 初始化配色方案服务
+        ColorSchemeService.Instance.Initialize();
     }
 }

@@ -6,37 +6,15 @@
 use rust_decimal::prelude::*;
 use rust_decimal::Decimal;
 use std::path::Path;
-use thiserror::Error;
 
-use crate::data_loader::{DataLoader, DataLoaderError};
-use crate::gateway::{Gateway, GatewayError, SimulatedGateway};
-use crate::risk::{RiskError, RiskManager};
+use crate::data_loader::DataLoader;
+use crate::error::{EngineError, EngineResult};
+use crate::gateway::{Gateway, SimulatedGateway};
+use crate::risk::RiskManager;
 use crate::strategy::{DualMAStrategy, Signal, Strategy};
 use crate::types::{
     AccountStatus, BacktestResult, DataQualityReport, RiskConfig, StrategyParams, Tick,
 };
-
-/// Engine error types.
-#[derive(Debug, Error)]
-pub enum EngineError {
-    #[error("Engine not initialized")]
-    NotInitialized,
-
-    #[error("No data loaded")]
-    NoData,
-
-    #[error("Data loading error: {0}")]
-    DataLoadError(#[from] DataLoaderError),
-
-    #[error("Risk check failed: {0}")]
-    RiskError(#[from] RiskError),
-
-    #[error("Gateway error: {0}")]
-    GatewayError(#[from] GatewayError),
-
-    #[error("Invalid parameter: {0}")]
-    InvalidParameter(String),
-}
 
 /// Backtest Engine for running strategy simulations.
 ///
@@ -127,7 +105,7 @@ impl BacktestEngine {
     }
 
     /// Load data from a file.
-    pub fn load_data<P: AsRef<Path>>(&mut self, path: P) -> Result<DataQualityReport, EngineError> {
+    pub fn load_data<P: AsRef<Path>>(&mut self, path: P) -> EngineResult<DataQualityReport> {
         let loader = DataLoader::new();
         let result = loader.load_from_file(path)?;
         
@@ -147,7 +125,7 @@ impl BacktestEngine {
         timestamps: Vec<i64>,
         prices: Vec<f64>,
         volumes: Vec<f64>,
-    ) -> Result<DataQualityReport, EngineError> {
+    ) -> EngineResult<DataQualityReport> {
         let loader = DataLoader::new();
         let result = loader.load_from_vectors(timestamps, prices, volumes)?;
         
@@ -162,9 +140,9 @@ impl BacktestEngine {
     }
 
     /// Process a single tick.
-    pub fn process_tick(&mut self, tick: &Tick) -> Result<Option<Signal>, EngineError> {
+    pub fn process_tick(&mut self, tick: &Tick) -> EngineResult<Option<Signal>> {
         if !self.initialized {
-            return Err(EngineError::NotInitialized);
+            return Err(EngineError::EngineNotInitialized);
         }
 
         // Update gateway price
@@ -237,9 +215,9 @@ impl BacktestEngine {
     }
 
     /// Run the complete backtest.
-    pub fn run(&mut self) -> Result<BacktestResult, EngineError> {
+    pub fn run(&mut self) -> EngineResult<BacktestResult> {
         if self.ticks.is_empty() {
-            return Err(EngineError::NoData);
+            return Err(EngineError::validation("No data loaded"));
         }
 
         // Reset state
@@ -277,6 +255,8 @@ impl BacktestEngine {
             total_trades: self.total_trades,
             winning_trades: self.winning_trades,
             losing_trades: self.losing_trades,
+            actual_start_bar: 0, // TODO: Integrate with WarmupManager
+            first_trade_timestamp: 0, // TODO: Track first trade timestamp
         })
     }
 
@@ -442,7 +422,7 @@ mod tests {
     fn test_no_data_error() {
         let mut engine = BacktestEngine::default();
         let result = engine.run();
-        assert!(matches!(result, Err(EngineError::NoData)));
+        assert!(matches!(result, Err(EngineError::ValidationError(_))));
     }
 
     #[test]

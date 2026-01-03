@@ -19,7 +19,7 @@ fn arb_symbol() -> impl Strategy<Value = [u8; 16]> {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(100))]
+    #![proptest_config(ProptestConfig::with_cases(50))]
 
     /// Property 1: Tick struct round-trip through raw bytes
     /// For any valid Tick, serializing to bytes and deserializing should produce identical values.

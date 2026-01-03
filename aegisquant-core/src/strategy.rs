@@ -251,6 +251,7 @@ mod tests {
             position_size: 100.0,
             stop_loss_pct: 0.02,
             take_profit_pct: 0.05,
+            warmup_bars: 0,
         };
         let strategy = DualMAStrategy::new(params);
         assert_eq!(strategy.short_ma_period(), 5);

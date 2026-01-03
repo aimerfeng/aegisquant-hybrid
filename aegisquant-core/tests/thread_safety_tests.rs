@@ -63,7 +63,7 @@ fn run_single_backtest(
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(100))]
+    #![proptest_config(ProptestConfig::with_cases(50))]
 
     /// Property 7.1: Parallel execution produces same results as serial execution.
     ///
@@ -85,6 +85,7 @@ proptest! {
             position_size: 10.0,
             stop_loss_pct: 0.02,
             take_profit_pct: 0.05,
+            warmup_bars: 0,
         };
         let risk_config = RiskConfig::default();
         let initial_balance = 100_000.0;

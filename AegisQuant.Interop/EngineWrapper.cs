@@ -23,6 +23,12 @@ public sealed class EngineWrapper : IDisposable
     private LogCallback? _logCallbackKeepAlive;
 
     /// <summary>
+    /// CRITICAL: Keep string callback delegate reference to prevent GC collection.
+    /// Used for error message retrieval.
+    /// </summary>
+    private StringCallback? _stringCallbackKeepAlive;
+
+    /// <summary>
     /// User-provided log handler.
     /// </summary>
     private Action<LogLevel, string>? _logHandler;
@@ -212,16 +218,72 @@ public sealed class EngineWrapper : IDisposable
     {
         if (!_disposed)
         {
+            // CRITICAL: Clear the log callback in Rust BEFORE releasing the delegate reference.
+            // This ensures Rust won't try to call a GC'd delegate.
+            if (_logCallbackKeepAlive != null)
+            {
+                NativeMethods.ClearLogCallback();
+            }
+
             // Release the native handle
             _handle?.Dispose();
             _handle = null;
 
-            // Clear callback references
+            // Clear callback references AFTER clearing in Rust
             _logCallbackKeepAlive = null;
+            _stringCallbackKeepAlive = null;
             _logHandler = null;
 
             _disposed = true;
         }
+    }
+
+    /// <summary>
+    /// Clears the log callback, stopping log message delivery.
+    /// </summary>
+    public void ClearLogCallback()
+    {
+        ThrowIfDisposed();
+        
+        NativeMethods.ClearLogCallback();
+        _logCallbackKeepAlive = null;
+        _logHandler = null;
+    }
+
+    /// <summary>
+    /// Gets the last error message from the Rust engine.
+    /// </summary>
+    /// <returns>The error message, or null if no error</returns>
+    public string? GetLastErrorMessage()
+    {
+        ThrowIfDisposed();
+
+        if (NativeMethods.HasErrorMessage() == 0)
+        {
+            return null;
+        }
+
+        string? result = null;
+
+        // Create callback and keep reference
+        _stringCallbackKeepAlive = (messagePtr) =>
+        {
+            result = Marshal.PtrToStringUTF8(messagePtr);
+        };
+
+        IntPtr callbackPtr = Marshal.GetFunctionPointerForDelegate(_stringCallbackKeepAlive);
+        NativeMethods.GetLastErrorMessage(callbackPtr);
+
+        return result;
+    }
+
+    /// <summary>
+    /// Clears the last error message in the Rust engine.
+    /// </summary>
+    public void ClearLastErrorMessage()
+    {
+        ThrowIfDisposed();
+        NativeMethods.ClearLastErrorMessage();
     }
 }
 

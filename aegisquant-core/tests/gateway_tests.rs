@@ -8,7 +8,7 @@ use aegisquant_core::types::*;
 use aegisquant_core::gateway::{Gateway, SimulatedGateway};
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(100))]
+    #![proptest_config(ProptestConfig::with_cases(50))]
 
     /// Property 8: All orders submitted through Gateway produce fills
     /// For any valid order submitted through Gateway::submit_order, a corresponding

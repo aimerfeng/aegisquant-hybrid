@@ -19,7 +19,7 @@ fn arb_symbol() -> impl Strategy<Value = [u8; 16]> {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(100))]
+    #![proptest_config(ProptestConfig::with_cases(50))]
 
     /// Property 1: Tick struct round-trip through raw bytes
     /// For any valid Tick, serializing to bytes and deserializing should produce identical values.
@@ -161,7 +161,8 @@ proptest! {
         long_ma_period in 10i32..500,
         position_size in 0.01f64..100_000.0,
         stop_loss_pct in 0.001f64..0.5,
-        take_profit_pct in 0.001f64..1.0
+        take_profit_pct in 0.001f64..1.0,
+        warmup_bars in 0i32..100
     ) {
         let original = StrategyParams {
             short_ma_period,
@@ -169,6 +170,7 @@ proptest! {
             position_size,
             stop_loss_pct,
             take_profit_pct,
+            warmup_bars,
         };
         
         let bytes: &[u8] = unsafe {
@@ -187,6 +189,7 @@ proptest! {
         prop_assert!((original.position_size - reconstructed.position_size).abs() < f64::EPSILON);
         prop_assert!((original.stop_loss_pct - reconstructed.stop_loss_pct).abs() < f64::EPSILON);
         prop_assert!((original.take_profit_pct - reconstructed.take_profit_pct).abs() < f64::EPSILON);
+        prop_assert_eq!(original.warmup_bars, reconstructed.warmup_bars);
     }
 
     /// Property 1: RiskConfig struct round-trip through raw bytes

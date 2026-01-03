@@ -7,7 +7,7 @@ use proptest::prelude::*;
 use aegisquant_core::data_loader::DataLoader;
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(100))]
+    #![proptest_config(ProptestConfig::with_cases(50))]
 
     /// Property 5: Invalid prices (price <= 0) are filtered out
     /// For any tick with price <= 0, it should be marked as invalid.

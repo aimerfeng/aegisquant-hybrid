@@ -13,10 +13,18 @@ rust_decimal = "1.33"
 polars = { version = "0.44", features = ["lazy", "csv", "parquet"] }
 rayon = "1.10"
 thiserror = "1.0"
+crossbeam-channel = "0.5"
+ta = "0.5"
+rusqlite = { version = "0.32", features = ["bundled"] }
+lazy_static = "1.4"
+chrono = "0.4"
 
 [dev-dependencies]
 proptest = "1.4"
 criterion = "0.5"
+tempfile = "3.10"
+serial_test = "3.0"
+rust_decimal_macros = "1.33"
 
 [[bench]]
 name = "hot_path_bench"

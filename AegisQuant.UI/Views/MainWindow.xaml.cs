@@ -1,6 +1,8 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
+using AegisQuant.UI.Services;
 using AegisQuant.UI.ViewModels;
 using ScottPlot;
 
@@ -20,6 +22,9 @@ public partial class MainWindow : Window
         // Get the view model
         _viewModel = DataContext as MainViewModel;
 
+        // Initialize environment service
+        EnvironmentService.Instance.Initialize();
+
         // Set up chart
         SetupChart();
 
@@ -27,6 +32,39 @@ public partial class MainWindow : Window
         if (_viewModel != null)
         {
             _viewModel.EquityCurve.CollectionChanged += EquityCurve_CollectionChanged;
+        }
+
+        // Sync environment selector with current environment
+        SyncEnvironmentSelector();
+    }
+
+    private void SyncEnvironmentSelector()
+    {
+        var currentEnv = EnvironmentService.Instance.CurrentEnvironment;
+        foreach (ComboBoxItem item in EnvironmentSelector.Items)
+        {
+            if (item.Tag?.ToString() == currentEnv.ToString())
+            {
+                EnvironmentSelector.SelectedItem = item;
+                break;
+            }
+        }
+    }
+
+    private void EnvironmentSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (EnvironmentSelector.SelectedItem is ComboBoxItem selectedItem)
+        {
+            var envTag = selectedItem.Tag?.ToString();
+            if (Enum.TryParse<TradingEnvironment>(envTag, out var environment))
+            {
+                var success = EnvironmentService.Instance.SetEnvironment(environment);
+                if (!success)
+                {
+                    // 用户取消了切换，恢复选择
+                    SyncEnvironmentSelector();
+                }
+            }
         }
     }
 

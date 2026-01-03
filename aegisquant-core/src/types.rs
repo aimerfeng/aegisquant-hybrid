@@ -176,6 +176,8 @@ pub struct StrategyParams {
     pub stop_loss_pct: f64,
     /// Take profit percentage (e.g., 0.05 = 5%)
     pub take_profit_pct: f64,
+    /// Number of bars to warm up before generating signals
+    pub warmup_bars: i32,
 }
 
 impl Default for StrategyParams {
@@ -186,6 +188,7 @@ impl Default for StrategyParams {
             position_size: 100.0,
             stop_loss_pct: 0.02,
             take_profit_pct: 0.05,
+            warmup_bars: 0,
         }
     }
 }
@@ -261,6 +264,10 @@ pub struct BacktestResult {
     pub winning_trades: i32,
     /// Number of losing trades
     pub losing_trades: i32,
+    /// Actual start bar (after warmup period)
+    pub actual_start_bar: i32,
+    /// First trade timestamp (0 if no trades)
+    pub first_trade_timestamp: i64,
 }
 
 impl Default for BacktestResult {
@@ -273,6 +280,8 @@ impl Default for BacktestResult {
             total_trades: 0,
             winning_trades: 0,
             losing_trades: 0,
+            actual_start_bar: 0,
+            first_trade_timestamp: 0,
         }
     }
 }

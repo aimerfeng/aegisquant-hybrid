@@ -1,0 +1,11 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 0ce51e0abd3527638a0cdc19e64890f30ba52b3afe29a7d2f64e44b59aeb4709 # shrinks to _dummy = 0
+cc b339ad7ba0dd55e00614226577d0b67b5c80938cd5df60b246dd065b5e9b62d8 # shrinks to thread_count = 4, messages_per_thread = 10
+cc 7e4c6138041222948e937250e06c9cef604ffca59c70f4b1bd8edb58984bdf14 # shrinks to thread_count = 3, messages_per_thread = 49
+cc f5681fc93f21a55d76cb8edd8a7f61bcbc8df8a05770a8bbd92c2ad2c89ce96a # shrinks to switch_count = 31
+cc e83244dd6b6621ca253c27ce071e5abc136ad1d17a577bf9670db14132d4d2dd # shrinks to thread_count = 5, messages_per_thread = 23

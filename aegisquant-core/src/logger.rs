@@ -1,10 +1,12 @@
 //! Structured logging module for AegisQuant-Hybrid.
 //!
 //! Provides structured logging with levels, correlation IDs, and FFI callback support.
+//! Uses AtomicPtr for thread-safe callback management without locks.
+//!
+//! Requirements: 4.1, 4.2, 4.3, 4.4
 
 use std::ffi::CString;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicPtr, AtomicU64, Ordering};
 
 /// Log levels matching common logging conventions.
 #[repr(i32)]
@@ -45,8 +47,11 @@ impl LogLevel {
 /// Log callback function type for FFI.
 pub type LogCallback = extern "C" fn(level: i32, message: *const std::ffi::c_char);
 
-/// Global log callback storage.
-static LOG_CALLBACK: Mutex<Option<LogCallback>> = Mutex::new(None);
+/// Global log callback storage using AtomicPtr for lock-free thread safety.
+/// 
+/// SAFETY: The pointer is either null or points to a valid function.
+/// The callback function must remain valid for the lifetime of the program.
+static LOG_CALLBACK: AtomicPtr<()> = AtomicPtr::new(std::ptr::null_mut());
 
 /// Global correlation ID counter.
 static CORRELATION_ID_COUNTER: AtomicU64 = AtomicU64::new(1);
@@ -118,12 +123,13 @@ impl Logger {
             format!("[{}] [{}] {}", level.as_str(), self.name, message)
         };
 
-        // Try to call the FFI callback
-        if let Ok(guard) = LOG_CALLBACK.lock() {
-            if let Some(callback) = *guard {
-                if let Ok(c_string) = CString::new(formatted.clone()) {
-                    callback(level as i32, c_string.as_ptr());
-                }
+        // Try to call the FFI callback using AtomicPtr
+        let ptr = LOG_CALLBACK.load(Ordering::SeqCst);
+        if !ptr.is_null() {
+            // SAFETY: We only store valid function pointers in LOG_CALLBACK
+            let callback: LogCallback = unsafe { std::mem::transmute(ptr) };
+            if let Ok(c_string) = CString::new(formatted.clone()) {
+                callback(level as i32, c_string.as_ptr());
             }
         }
 
@@ -230,22 +236,111 @@ impl Default for Logger {
     }
 }
 
-/// Set the global log callback for FFI.
+/// Set the global log callback for FFI using AtomicPtr.
 ///
 /// # Safety
 /// The callback must be a valid function pointer that remains valid
-/// for the lifetime of the program.
+/// for the lifetime of the program or until clear_log_callback is called.
 pub fn set_log_callback(callback: LogCallback) {
-    if let Ok(mut guard) = LOG_CALLBACK.lock() {
-        *guard = Some(callback);
-    }
+    // SAFETY: We cast the function pointer to *mut () for storage.
+    // This is safe because we only read it back as LogCallback.
+    LOG_CALLBACK.store(callback as *mut (), Ordering::SeqCst);
 }
 
 /// Clear the global log callback.
+/// After calling this, log messages will be silently ignored (no callback invoked).
 pub fn clear_log_callback() {
-    if let Ok(mut guard) = LOG_CALLBACK.lock() {
-        *guard = None;
+    LOG_CALLBACK.store(std::ptr::null_mut(), Ordering::SeqCst);
+}
+
+/// Check if a log callback is currently set.
+pub fn has_log_callback() -> bool {
+    !LOG_CALLBACK.load(Ordering::SeqCst).is_null()
+}
+
+/// Global log function for use without a Logger instance.
+/// Useful for macros and quick logging.
+pub fn log(level: LogLevel, message: &str) {
+    let ptr = LOG_CALLBACK.load(Ordering::SeqCst);
+    if ptr.is_null() {
+        return;
     }
+
+    // SAFETY: We only store valid function pointers in LOG_CALLBACK
+    let callback: LogCallback = unsafe { std::mem::transmute(ptr) };
+    if let Ok(c_string) = CString::new(message) {
+        callback(level as i32, c_string.as_ptr());
+    }
+}
+
+/// Log at INFO level (global function).
+#[inline]
+pub fn log_info(message: &str) {
+    log(LogLevel::Info, message);
+}
+
+/// Log at WARN level (global function).
+#[inline]
+pub fn log_warn(message: &str) {
+    log(LogLevel::Warn, message);
+}
+
+/// Log at ERROR level (global function).
+#[inline]
+pub fn log_error(message: &str) {
+    log(LogLevel::Error, message);
+}
+
+/// Log at DEBUG level (global function).
+#[inline]
+pub fn log_debug(message: &str) {
+    log(LogLevel::Debug, message);
+}
+
+/// Log at TRACE level (global function).
+#[inline]
+pub fn log_trace(message: &str) {
+    log(LogLevel::Trace, message);
+}
+
+/// Macro for logging at INFO level with format string.
+#[macro_export]
+macro_rules! log_info {
+    ($($arg:tt)*) => {
+        $crate::logger::log($crate::logger::LogLevel::Info, &format!($($arg)*))
+    };
+}
+
+/// Macro for logging at WARN level with format string.
+#[macro_export]
+macro_rules! log_warn {
+    ($($arg:tt)*) => {
+        $crate::logger::log($crate::logger::LogLevel::Warn, &format!($($arg)*))
+    };
+}
+
+/// Macro for logging at ERROR level with format string.
+#[macro_export]
+macro_rules! log_error {
+    ($($arg:tt)*) => {
+        $crate::logger::log($crate::logger::LogLevel::Error, &format!($($arg)*))
+    };
+}
+
+/// Macro for logging at DEBUG level with format string.
+#[macro_export]
+macro_rules! log_debug {
+    ($($arg:tt)*) => {
+        $crate::logger::log($crate::logger::LogLevel::Debug, &format!($($arg)*))
+    };
+}
+
+/// Macro for logging at TRACE level with format string.
+#[macro_export]
+macro_rules! log_trace {
+    ($($arg:tt)*) => {
+        $crate::logger::log($crate::logger::LogLevel::Trace, &format!($($arg)*))
+    };
 }
 
 #[cfg(test)]

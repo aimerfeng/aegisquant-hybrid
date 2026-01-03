@@ -319,6 +319,27 @@ pub unsafe extern "C" fn set_log_callback(
     }
 }
 
+/// Clear the global log callback.
+///
+/// After calling this, log messages will be silently ignored.
+/// Call this before disposing the engine to ensure no callbacks are invoked
+/// after the delegate has been garbage collected.
+///
+/// # Returns
+/// - ERR_SUCCESS on success
+#[no_mangle]
+pub extern "C" fn clear_log_callback() -> i32 {
+    let result = catch_unwind(|| {
+        crate::logger::clear_log_callback();
+        ERR_SUCCESS
+    });
+
+    match result {
+        Ok(code) => code,
+        Err(_) => ERR_INTERNAL_PANIC,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -341,6 +362,7 @@ mod tests {
                 position_size: 200.0,
                 stop_loss_pct: 0.03,
                 take_profit_pct: 0.06,
+                warmup_bars: 0,
             };
             let risk = RiskConfig::default();
 
