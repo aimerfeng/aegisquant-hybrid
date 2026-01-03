@@ -184,3 +184,76 @@ public class PriceToColorConverter : IMultiValueConverter
         throw new NotImplementedException();
     }
 }
+
+
+/// <summary>
+/// Checks if a number is positive.
+/// </summary>
+public class IsPositiveConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is double doubleValue)
+        {
+            return doubleValue > 0;
+        }
+        if (value is decimal decimalValue)
+        {
+            return decimalValue > 0;
+        }
+        if (value is int intValue)
+        {
+            return intValue > 0;
+        }
+        return false;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts a non-empty string to Visibility.Visible, empty to Collapsed.
+/// </summary>
+public class StringToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is string str)
+        {
+            return string.IsNullOrEmpty(str) ? Visibility.Collapsed : Visibility.Visible;
+        }
+        return Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts a boolean to Visibility (true = Visible, false = Collapsed).
+/// </summary>
+public class BoolToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is bool boolValue)
+        {
+            return boolValue ? Visibility.Visible : Visibility.Collapsed;
+        }
+        return Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is Visibility visibility)
+        {
+            return visibility == Visibility.Visible;
+        }
+        return false;
+    }
+}

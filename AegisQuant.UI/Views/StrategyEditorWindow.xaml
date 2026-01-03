@@ -1,0 +1,256 @@
+<Window x:Class="AegisQuant.UI.Views.StrategyEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="策略编辑器" Height="700" Width="1000"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource BackgroundBrush}">
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Toolbar -->
+        <Border Grid.Row="0" Background="{DynamicResource CardBrush}" 
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- Strategy Type Selection -->
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="策略类型:" VerticalAlignment="Center" 
+                               Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,8,0"/>
+                    <ComboBox x:Name="StrategyTypeComboBox" Width="150" 
+                              SelectionChanged="StrategyTypeComboBox_SelectionChanged">
+                        <ComboBoxItem Content="JSON 配置策略" Tag="json" IsSelected="True"/>
+                        <ComboBoxItem Content="Python 脚本策略" Tag="python"/>
+                    </ComboBox>
+                </StackPanel>
+                
+                <!-- Template Selection -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="16,0,0,0">
+                    <TextBlock Text="模板:" VerticalAlignment="Center" 
+                               Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,8,0"/>
+                    <ComboBox x:Name="TemplateComboBox" Width="180"
+                              SelectionChanged="TemplateComboBox_SelectionChanged">
+                        <ComboBoxItem Content="空白策略" Tag="blank"/>
+                        <ComboBoxItem Content="均线交叉" Tag="ma_crossover"/>
+                        <ComboBoxItem Content="RSI 策略" Tag="rsi"/>
+                        <ComboBoxItem Content="MACD 策略" Tag="macd"/>
+                        <ComboBoxItem Content="突破策略" Tag="breakout"/>
+                    </ComboBox>
+                </StackPanel>
+                
+                <!-- Action Buttons -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button x:Name="ValidateButton" Content="验证" Margin="0,0,8,0"
+                            Click="ValidateButton_Click" Padding="12,4"
+                            Style="{DynamicResource PrimaryButtonStyle}"/>
+                    <Button x:Name="OpenFileButton" Content="打开文件" Margin="0,0,8,0"
+                            Click="OpenFileButton_Click" Padding="12,4"/>
+                    <Button x:Name="SaveFileButton" Content="保存文件" 
+                            Click="SaveFileButton_Click" Padding="12,4"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+        
+        <!-- Main Content Area -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="300"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- Code Editor -->
+            <Border Grid.Column="0" Background="{DynamicResource CardBrush}" 
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <Border Background="{DynamicResource BackgroundBrush}" Padding="8,4">
+                        <TextBlock x:Name="EditorTitleText" Text="JSON 策略代码" 
+                                   FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                    </Border>
+                    
+                    <TextBox x:Name="CodeEditor" Grid.Row="1"
+                             AcceptsReturn="True" AcceptsTab="True"
+                             VerticalScrollBarVisibility="Auto"
+                             HorizontalScrollBarVisibility="Auto"
+                             FontFamily="Consolas, Courier New"
+                             FontSize="13"
+                             Background="{DynamicResource BackgroundBrush}"
+                             Foreground="{DynamicResource PrimaryTextBrush}"
+                             BorderThickness="0"
+                             TextWrapping="NoWrap"
+                             TextChanged="CodeEditor_TextChanged"/>
+                </Grid>
+            </Border>
+            
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" 
+                          Background="{DynamicResource BorderBrush}"/>
+            
+            <!-- Help Panel -->
+            <Border Grid.Column="2" Background="{DynamicResource CardBrush}" 
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,8,8,8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <Border Background="{DynamicResource BackgroundBrush}" Padding="8,4">
+                        <TextBlock Text="帮助" FontWeight="SemiBold" 
+                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+                    </Border>
+                    
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="8">
+                        <StackPanel x:Name="HelpPanel">
+                            <!-- JSON Help -->
+                            <StackPanel x:Name="JsonHelpPanel">
+                                <TextBlock Text="JSON 策略结构" FontWeight="SemiBold" 
+                                           Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,8"/>
+                                <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11">
+                                    <Run FontWeight="SemiBold">name</Run>: 策略名称
+                                    <LineBreak/>
+                                    <Run FontWeight="SemiBold">description</Run>: 策略描述
+                                    <LineBreak/>
+                                    <Run FontWeight="SemiBold">version</Run>: 版本号
+                                    <LineBreak/>
+                                    <Run FontWeight="SemiBold">parameters</Run>: 策略参数
+                                    <LineBreak/>
+                                    <Run FontWeight="SemiBold">indicators</Run>: 技术指标配置
+                                    <LineBreak/>
+                                    <Run FontWeight="SemiBold">entry_conditions</Run>: 入场条件
+                                    <LineBreak/>
+                                    <Run FontWeight="SemiBold">exit_conditions</Run>: 出场条件
+                                </TextBlock>
+                                
+                                <TextBlock Text="可用指标" FontWeight="SemiBold" 
+                                           Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,16,0,8"/>
+                                <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11">
+                                    • SMA (简单移动平均)
+                                    <LineBreak/>
+                                    • EMA (指数移动平均)
+                                    <LineBreak/>
+                                    • RSI (相对强弱指数)
+                                    <LineBreak/>
+                                    • MACD (移动平均收敛散度)
+                                    <LineBreak/>
+                                    • Bollinger Bands (布林带)
+                                </TextBlock>
+                                
+                                <TextBlock Text="条件运算符" FontWeight="SemiBold" 
+                                           Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,16,0,8"/>
+                                <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11">
+                                    • crosses_above: 上穿
+                                    <LineBreak/>
+                                    • crosses_below: 下穿
+                                    <LineBreak/>
+                                    • greater_than: 大于
+                                    <LineBreak/>
+                                    • less_than: 小于
+                                </TextBlock>
+                            </StackPanel>
+                            
+                            <!-- Python Help -->
+                            <StackPanel x:Name="PythonHelpPanel" Visibility="Collapsed">
+                                <TextBlock Text="Python 策略结构" FontWeight="SemiBold" 
+                                           Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,8"/>
+                                <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11">
+                                    继承 BaseStrategy 类并实现:
+                                    <LineBreak/>
+                                    <LineBreak/>
+                                    <Run FontWeight="SemiBold">__init__</Run>: 初始化参数
+                                    <LineBreak/>
+                                    <Run FontWeight="SemiBold">on_tick</Run>: 处理每个 tick
+                                    <LineBreak/>
+                                    <Run FontWeight="SemiBold">on_bar</Run>: 处理每根 K 线
+                                </TextBlock>
+                                
+                                <TextBlock Text="可用 API" FontWeight="SemiBold" 
+                                           Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,16,0,8"/>
+                                <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11">
+                                    • ctx.price: 当前价格
+                                    <LineBreak/>
+                                    • ctx.volume: 当前成交量
+                                    <LineBreak/>
+                                    • ctx.position: 当前持仓
+                                    <LineBreak/>
+                                    • ctx.equity: 账户净值
+                                    <LineBreak/>
+                                    • ctx.sma(period): 计算 SMA
+                                    <LineBreak/>
+                                    • ctx.ema(period): 计算 EMA
+                                    <LineBreak/>
+                                    • ctx.rsi(period): 计算 RSI
+                                </TextBlock>
+                                
+                                <TextBlock Text="返回信号" FontWeight="SemiBold" 
+                                           Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,16,0,8"/>
+                                <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11">
+                                    • Signal.BUY: 买入信号
+                                    <LineBreak/>
+                                    • Signal.SELL: 卖出信号
+                                    <LineBreak/>
+                                    • Signal.NONE: 无信号
+                                </TextBlock>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+        
+        <!-- Validation Output -->
+        <Border Grid.Row="2" Background="{DynamicResource CardBrush}" 
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" 
+                MaxHeight="150" Margin="8,0,8,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <Border Background="{DynamicResource BackgroundBrush}" Padding="8,4">
+                    <TextBlock Text="验证输出" FontWeight="SemiBold" FontSize="11"
+                               Foreground="{DynamicResource PrimaryTextBrush}"/>
+                </Border>
+                
+                <TextBox x:Name="ValidationOutput" Grid.Row="1"
+                         IsReadOnly="True" TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto"
+                         FontFamily="Consolas" FontSize="11"
+                         Background="Transparent"
+                         Foreground="{DynamicResource SecondaryTextBrush}"
+                         BorderThickness="0" Padding="8"/>
+            </Grid>
+        </Border>
+        
+        <!-- Footer Buttons -->
+        <Border Grid.Row="3" Background="{DynamicResource CardBrush}" 
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="8">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="LoadButton" Content="加载到系统" Margin="0,0,8,0"
+                        Click="LoadButton_Click" Padding="16,6"
+                        Style="{DynamicResource SuccessButtonStyle}"/>
+                <Button x:Name="CancelButton" Content="取消" 
+                        Click="CancelButton_Click" Padding="16,6"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

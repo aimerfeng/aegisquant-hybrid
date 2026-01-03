@@ -103,4 +103,41 @@
     <system:String x:Key="String.Strategy.UseBuiltIn">使用内置策略</system:String>
     <system:String x:Key="String.Browse">浏览...</system:String>
     
+    <!-- Multi-Strategy Management -->
+    <system:String x:Key="String.Strategy.StrategyList">策略列表</system:String>
+    <system:String x:Key="String.Strategy.AddStrategy">添加策略</system:String>
+    <system:String x:Key="String.Strategy.NewStrategy">新建策略</system:String>
+    <system:String x:Key="String.Strategy.RemoveStrategy">移除策略</system:String>
+    <system:String x:Key="String.Strategy.EnableStrategy">启用策略</system:String>
+    <system:String x:Key="String.Strategy.DisableStrategy">禁用策略</system:String>
+    <system:String x:Key="String.Strategy.SignalAggregation">信号聚合</system:String>
+    <system:String x:Key="String.Strategy.FirstSignal">首个信号</system:String>
+    <system:String x:Key="String.Strategy.MajorityVote">多数投票</system:String>
+    <system:String x:Key="String.Strategy.Unanimous">一致同意</system:String>
+    <system:String x:Key="String.Strategy.WeightedVote">加权投票</system:String>
+    <system:String x:Key="String.Strategy.Independent">独立执行</system:String>
+    <system:String x:Key="String.Strategy.NoStrategies">暂无策略</system:String>
+    <system:String x:Key="String.Strategy.ClickToAdd">点击 + 添加策略</system:String>
+    <system:String x:Key="String.Strategy.Signals">信号</system:String>
+    <system:String x:Key="String.Strategy.Trades">交易</system:String>
+    <system:String x:Key="String.Strategy.PnL">盈亏</system:String>
+    
+    <!-- Strategy Editor -->
+    <system:String x:Key="String.Editor.Title">策略编辑器</system:String>
+    <system:String x:Key="String.Editor.StrategyType">策略类型</system:String>
+    <system:String x:Key="String.Editor.JsonStrategy">JSON 配置策略</system:String>
+    <system:String x:Key="String.Editor.PythonStrategy">Python 脚本策略</system:String>
+    <system:String x:Key="String.Editor.Template">模板</system:String>
+    <system:String x:Key="String.Editor.BlankStrategy">空白策略</system:String>
+    <system:String x:Key="String.Editor.MACrossover">均线交叉</system:String>
+    <system:String x:Key="String.Editor.RSIStrategy">RSI 策略</system:String>
+    <system:String x:Key="String.Editor.MACDStrategy">MACD 策略</system:String>
+    <system:String x:Key="String.Editor.BreakoutStrategy">突破策略</system:String>
+    <system:String x:Key="String.Editor.Validate">验证</system:String>
+    <system:String x:Key="String.Editor.OpenFile">打开文件</system:String>
+    <system:String x:Key="String.Editor.SaveFile">保存文件</system:String>
+    <system:String x:Key="String.Editor.LoadToSystem">加载到系统</system:String>
+    <system:String x:Key="String.Editor.Help">帮助</system:String>
+    <system:String x:Key="String.Editor.ValidationOutput">验证输出</system:String>
+    
 </ResourceDictionary>

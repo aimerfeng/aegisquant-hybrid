@@ -103,4 +103,41 @@
     <system:String x:Key="String.Strategy.UseBuiltIn">Use Built-in</system:String>
     <system:String x:Key="String.Browse">Browse...</system:String>
     
+    <!-- Multi-Strategy Management -->
+    <system:String x:Key="String.Strategy.StrategyList">Strategy List</system:String>
+    <system:String x:Key="String.Strategy.AddStrategy">Add Strategy</system:String>
+    <system:String x:Key="String.Strategy.NewStrategy">New Strategy</system:String>
+    <system:String x:Key="String.Strategy.RemoveStrategy">Remove Strategy</system:String>
+    <system:String x:Key="String.Strategy.EnableStrategy">Enable Strategy</system:String>
+    <system:String x:Key="String.Strategy.DisableStrategy">Disable Strategy</system:String>
+    <system:String x:Key="String.Strategy.SignalAggregation">Signal Aggregation</system:String>
+    <system:String x:Key="String.Strategy.FirstSignal">First Signal</system:String>
+    <system:String x:Key="String.Strategy.MajorityVote">Majority Vote</system:String>
+    <system:String x:Key="String.Strategy.Unanimous">Unanimous</system:String>
+    <system:String x:Key="String.Strategy.WeightedVote">Weighted Vote</system:String>
+    <system:String x:Key="String.Strategy.Independent">Independent</system:String>
+    <system:String x:Key="String.Strategy.NoStrategies">No Strategies</system:String>
+    <system:String x:Key="String.Strategy.ClickToAdd">Click + to add strategy</system:String>
+    <system:String x:Key="String.Strategy.Signals">Signals</system:String>
+    <system:String x:Key="String.Strategy.Trades">Trades</system:String>
+    <system:String x:Key="String.Strategy.PnL">PnL</system:String>
+    
+    <!-- Strategy Editor -->
+    <system:String x:Key="String.Editor.Title">Strategy Editor</system:String>
+    <system:String x:Key="String.Editor.StrategyType">Strategy Type</system:String>
+    <system:String x:Key="String.Editor.JsonStrategy">JSON Config Strategy</system:String>
+    <system:String x:Key="String.Editor.PythonStrategy">Python Script Strategy</system:String>
+    <system:String x:Key="String.Editor.Template">Template</system:String>
+    <system:String x:Key="String.Editor.BlankStrategy">Blank Strategy</system:String>
+    <system:String x:Key="String.Editor.MACrossover">MA Crossover</system:String>
+    <system:String x:Key="String.Editor.RSIStrategy">RSI Strategy</system:String>
+    <system:String x:Key="String.Editor.MACDStrategy">MACD Strategy</system:String>
+    <system:String x:Key="String.Editor.BreakoutStrategy">Breakout Strategy</system:String>
+    <system:String x:Key="String.Editor.Validate">Validate</system:String>
+    <system:String x:Key="String.Editor.OpenFile">Open File</system:String>
+    <system:String x:Key="String.Editor.SaveFile">Save File</system:String>
+    <system:String x:Key="String.Editor.LoadToSystem">Load to System</system:String>
+    <system:String x:Key="String.Editor.Help">Help</system:String>
+    <system:String x:Key="String.Editor.ValidationOutput">Validation Output</system:String>
+    
 </ResourceDictionary>
