@@ -1,8 +1,24 @@
 using AegisQuant.Interop;
 using AegisQuant.UI.Strategy;
 using AegisQuant.UI.Services;
+using ScottPlot;
 
 namespace AegisQuant.UI.Models;
+
+/// <summary>
+/// Event arguments for OHLC data loaded.
+/// </summary>
+public class OhlcDataLoadedEventArgs : EventArgs
+{
+    public List<OHLC> OhlcData { get; }
+    public List<double> Volumes { get; }
+
+    public OhlcDataLoadedEventArgs(List<OHLC> ohlcData, List<double> volumes)
+    {
+        OhlcData = ohlcData;
+        Volumes = volumes;
+    }
+}
 
 /// <summary>
 /// Event arguments for status updates during backtest execution.
@@ -114,6 +130,11 @@ public class BacktestService : IDisposable
     public event EventHandler<StrategySignalEventArgs>? OnStrategySignal;
 
     /// <summary>
+    /// Event raised when OHLC data is loaded.
+    /// </summary>
+    public event EventHandler<OhlcDataLoadedEventArgs>? OnOhlcDataLoaded;
+
+    /// <summary>
     /// Gets whether a backtest is currently running.
     /// </summary>
     public bool IsRunning => _isRunning;
@@ -132,6 +153,16 @@ public class BacktestService : IDisposable
     /// Gets the data quality report from the last data load.
     /// </summary>
     public DataQualityReport? LastDataQualityReport { get; private set; }
+
+    /// <summary>
+    /// Gets the OHLC data from the last data load.
+    /// </summary>
+    public List<OHLC>? OhlcData { get; private set; }
+
+    /// <summary>
+    /// Gets the volume data from the last data load.
+    /// </summary>
+    public List<double>? VolumeData { get; private set; }
 
     /// <summary>
     /// Gets the strategy manager service.
@@ -254,10 +285,113 @@ public class BacktestService : IDisposable
         // Reset strategy context for new data
         _strategyContext.Reset();
 
+        // Convert tick data to OHLC for charting
+        await ConvertDataToOhlcAsync(filePath);
+
         RaiseLog(LogLevel.Info, $"Data loaded: {report.ValidTicks} valid ticks, {report.InvalidTicks} invalid, {report.AnomalyTicks} anomalies");
 
         return report;
     }
+
+    /// <summary>
+    /// Converts tick data from file to OHLC format for charting.
+    /// </summary>
+    private async Task ConvertDataToOhlcAsync(string filePath)
+    {
+        try
+        {
+            var ohlcData = new List<OHLC>();
+            var volumeData = new List<double>();
+
+            await Task.Run(() =>
+            {
+                // Read CSV file and convert to OHLC
+                var lines = System.IO.File.ReadAllLines(filePath);
+                if (lines.Length <= 1) return;
+
+                // Parse header to find column indices
+                var header = lines[0].Split(',');
+                int timestampIdx = Array.FindIndex(header, h => h.Trim().ToLower() == "timestamp");
+                int priceIdx = Array.FindIndex(header, h => h.Trim().ToLower() == "price");
+                int volumeIdx = Array.FindIndex(header, h => h.Trim().ToLower() == "volume");
+
+                if (timestampIdx < 0 || priceIdx < 0)
+                {
+                    RaiseLog(LogLevel.Warn, "CSV file missing required columns (timestamp, price)");
+                    return;
+                }
+
+                // Group ticks by minute for OHLC aggregation
+                var ticksByMinute = new Dictionary<DateTime, List<(double price, double volume)>>();
+
+                for (int i = 1; i < lines.Length; i++)
+                {
+                    var parts = lines[i].Split(',');
+                    if (parts.Length <= Math.Max(timestampIdx, priceIdx)) continue;
+
+                    if (!long.TryParse(parts[timestampIdx].Trim(), out var timestamp)) continue;
+                    if (!double.TryParse(parts[priceIdx].Trim(), out var price)) continue;
+                    
+                    double volume = 0;
+                    if (volumeIdx >= 0 && parts.Length > volumeIdx)
+                    {
+                        double.TryParse(parts[volumeIdx].Trim(), out volume);
+                    }
+
+                    // Convert nanoseconds to DateTime and round to minute
+                    var dt = DateTimeOffset.FromUnixTimeMilliseconds(timestamp / 1_000_000).DateTime;
+                    var minuteKey = new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, 0);
+
+                    if (!ticksByMinute.ContainsKey(minuteKey))
+                    {
+                        ticksByMinute[minuteKey] = new List<(double, double)>();
+                    }
+                    ticksByMinute[minuteKey].Add((price, volume));
+                }
+
+                // Convert grouped ticks to OHLC
+                foreach (var kvp in ticksByMinute.OrderBy(k => k.Key))
+                {
+                    var ticks = kvp.Value;
+                    if (ticks.Count == 0) continue;
+
+                    var open = ticks.First().price;
+                    var close = ticks.Last().price;
+                    var high = ticks.Max(t => t.price);
+                    var low = ticks.Min(t => t.price);
+                    var totalVolume = ticks.Sum(t => t.volume);
+
+                    ohlcData.Add(new OHLC(open, high, low, close, kvp.Key, TimeSpan.FromMinutes(1)));
+                    volumeData.Add(totalVolume);
+                }
+            });
+
+            OhlcData = ohlcData;
+            VolumeData = volumeData;
+
+            if (ohlcData.Count > 0)
+            {
+                RaiseLog(LogLevel.Info, $"Converted to {ohlcData.Count} OHLC bars");
+                OnOhlcDataLoaded?.Invoke(this, new OhlcDataLoadedEventArgs(ohlcData, volumeData));
+            }
+        }
+        catch (Exception ex)
+        {
+            RaiseLog(LogLevel.Warn, $"Failed to convert data to OHLC: {ex.Message}");
+            OhlcData = new List<OHLC>();
+            VolumeData = new List<double>();
+        }
+    }
+
+    /// <summary>
+    /// Gets the OHLC data for charting.
+    /// </summary>
+    public List<OHLC> GetOhlcData() => OhlcData ?? new List<OHLC>();
+
+    /// <summary>
+    /// Gets the volume data for charting.
+    /// </summary>
+    public List<double> GetVolumeData() => VolumeData ?? new List<double>();
 
     /// <summary>
     /// Runs the backtest asynchronously with progress reporting.
@@ -443,7 +577,7 @@ public class BacktestService : IDisposable
     /// </summary>
     /// <param name="tick">Tick data to process</param>
     /// <returns>Signal generated by the strategy</returns>
-    public Signal ProcessTickWithExternalStrategy(Tick tick)
+    public Signal ProcessTickWithExternalStrategy(AegisQuant.Interop.Tick tick)
     {
         if (!_useExternalStrategy || _strategyManager.CurrentStrategy == null)
         {

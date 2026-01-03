@@ -5,6 +5,8 @@ using CommunityToolkit.Mvvm.Input;
 using AegisQuant.Interop;
 using AegisQuant.UI.Models;
 using AegisQuant.UI.Strategy;
+using AegisQuant.UI.Strategy.Models;
+using ScottPlot;
 
 namespace AegisQuant.UI.ViewModels;
 
@@ -92,6 +94,30 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private LogLevel _selectedLogLevel = LogLevel.Info;
 
+    /// <summary>
+    /// OHLC data for chart display.
+    /// </summary>
+    [ObservableProperty]
+    private List<OHLC>? _ohlcData;
+
+    /// <summary>
+    /// Volume data for chart display.
+    /// </summary>
+    [ObservableProperty]
+    private List<double>? _volumeData;
+
+    /// <summary>
+    /// Available strategies for selection.
+    /// </summary>
+    [ObservableProperty]
+    private ObservableCollection<StrategyInfo> _availableStrategies = new();
+
+    /// <summary>
+    /// Currently selected strategy.
+    /// </summary>
+    [ObservableProperty]
+    private StrategyInfo? _selectedStrategy;
+
     #endregion
 
     #region Strategy Parameters
@@ -160,6 +186,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _currentStrategyName = "Built-in (DualMA)";
 
+    /// <summary>
+    /// Event raised when OHLC data is loaded and ready for chart display.
+    /// </summary>
+    public event EventHandler<OhlcDataLoadedEventArgs>? OnOhlcDataLoaded;
+
     #endregion
 
     public MainViewModel()
@@ -170,9 +201,32 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _backtestService.OnStatusUpdated += OnStatusUpdated;
         _backtestService.OnLogReceived += OnLogReceived;
         _backtestService.OnBacktestCompleted += OnBacktestCompleted;
+        _backtestService.OnOhlcDataLoaded += OnOhlcDataLoadedHandler;
+
+        // Initialize available strategies
+        InitializeStrategies();
 
         // Initialize with default parameters
         InitializeEngine();
+    }
+
+    /// <summary>
+    /// Initializes the available strategies list.
+    /// </summary>
+    private void InitializeStrategies()
+    {
+        // Add built-in strategy
+        var builtInStrategy = new StrategyInfo
+        {
+            Name = "Built-in (DualMA)",
+            Description = "Dual Moving Average crossover strategy implemented in Rust",
+            Type = StrategyType.BuiltIn,
+            Version = "1.0"
+        };
+        AvailableStrategies.Add(builtInStrategy);
+
+        // Set default selection
+        SelectedStrategy = builtInStrategy;
     }
 
     private void InitializeEngine()
@@ -352,6 +406,24 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _backtestService.SetExternalStrategy(strategy);
         AddLog(LogLevel.Info, $"Loaded external strategy: {strategy.Name}");
         StatusMessage = $"Strategy loaded: {strategy.Name}";
+
+        // Add to available strategies if not already present
+        var existingStrategy = AvailableStrategies.FirstOrDefault(s => s.Name == strategy.Name);
+        if (existingStrategy == null)
+        {
+            var newStrategyInfo = new StrategyInfo
+            {
+                Name = strategy.Name,
+                Description = strategy.Description,
+                Type = strategy.Type
+            };
+            AvailableStrategies.Add(newStrategyInfo);
+            SelectedStrategy = newStrategyInfo;
+        }
+        else
+        {
+            SelectedStrategy = existingStrategy;
+        }
     }
 
     /// <summary>
@@ -457,6 +529,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    private void OnOhlcDataLoadedHandler(object? sender, OhlcDataLoadedEventArgs e)
+    {
+        Application.Current?.Dispatcher.Invoke(() =>
+        {
+            OhlcData = e.OhlcData;
+            VolumeData = e.Volumes;
+            
+            // Forward the event to the View
+            OnOhlcDataLoaded?.Invoke(this, e);
+        });
+    }
+
     #endregion
 
     #region Property Change Handlers
@@ -478,6 +562,40 @@ public partial class MainViewModel : ObservableObject, IDisposable
         // Could filter existing logs here if needed
     }
 
+    partial void OnSelectedStrategyChanged(StrategyInfo? value)
+    {
+        if (value == null) return;
+
+        CurrentStrategyName = value.Name;
+
+        if (value.Type == StrategyType.BuiltIn)
+        {
+            // Use built-in Rust strategy
+            _backtestService.UseBuiltInStrategy();
+            AddLog(LogLevel.Info, "Switched to built-in DualMA strategy");
+        }
+        else if (!string.IsNullOrEmpty(value.FilePath))
+        {
+            // Load external strategy
+            _ = LoadExternalStrategyAsync(value.FilePath);
+        }
+    }
+
+    private async Task LoadExternalStrategyAsync(string filePath)
+    {
+        try
+        {
+            await _backtestService.LoadExternalStrategyAsync(filePath);
+            AddLog(LogLevel.Info, $"Loaded external strategy from: {filePath}");
+        }
+        catch (Exception ex)
+        {
+            AddLog(LogLevel.Error, $"Failed to load strategy: {ex.Message}");
+            // Revert to built-in
+            SelectedStrategy = AvailableStrategies.FirstOrDefault(s => s.Type == StrategyType.BuiltIn);
+        }
+    }
+
     #endregion
 
     public void Dispose()
@@ -487,6 +605,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             _backtestService.OnStatusUpdated -= OnStatusUpdated;
             _backtestService.OnLogReceived -= OnLogReceived;
             _backtestService.OnBacktestCompleted -= OnBacktestCompleted;
+            _backtestService.OnOhlcDataLoaded -= OnOhlcDataLoadedHandler;
             _backtestService.Dispose();
             _disposed = true;
         }

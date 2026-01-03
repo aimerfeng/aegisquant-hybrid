@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using AegisQuant.UI.Controls;
+using AegisQuant.UI.Models;
 using AegisQuant.UI.Services;
 using AegisQuant.UI.Strategy;
 using AegisQuant.UI.ViewModels;
@@ -25,6 +26,7 @@ public partial class MainWindow : Window
     private TextBlock? CurrentStrategyTypeText => FindName("CurrentStrategyTypeText") as TextBlock;
     private Button? UseBuiltInButton => FindName("UseBuiltInButton") as Button;
     private StrategyListPanel? StrategyListPanelControl => FindName("StrategyListPanel") as StrategyListPanel;
+    private CandlestickChartControl? MainChartControlElement => FindName("MainChartControl") as CandlestickChartControl;
 
     public MainWindow()
     {
@@ -45,12 +47,10 @@ public partial class MainWindow : Window
             StrategyListPanelControl.StrategySelected += OnStrategySelected;
         }
 
-        // Set up chart
-        SetupChart();
-
-        // Subscribe to equity curve changes
+        // Subscribe to OHLC data changes
         if (_viewModel != null)
         {
+            _viewModel.OnOhlcDataLoaded += OnOhlcDataLoaded;
             _viewModel.EquityCurve.CollectionChanged += EquityCurve_CollectionChanged;
         }
     }
@@ -71,58 +71,41 @@ public partial class MainWindow : Window
             };
     }
 
-    private void SetupChart()
+    /// <summary>
+    /// Handles OHLC data loaded event and updates the chart.
+    /// </summary>
+    private void OnOhlcDataLoaded(object? sender, OhlcDataLoadedEventArgs e)
     {
-        // Configure the chart appearance
-        EquityChart.Plot.Title("Equity Curve");
-        EquityChart.Plot.XLabel("Tick");
-        EquityChart.Plot.YLabel("Equity ($)");
-
-        // Set initial axis limits
-        EquityChart.Plot.Axes.SetLimitsX(0, 100);
-        EquityChart.Plot.Axes.SetLimitsY(90000, 110000);
-
-        EquityChart.Refresh();
+        Dispatcher.Invoke(() =>
+        {
+            try
+            {
+                if (MainChartControlElement != null && e.OhlcData.Count > 0)
+                {
+                    // Update the candlestick chart with OHLC data
+                    MainChartControlElement.UpdateOhlcData(e.OhlcData);
+                    
+                    // Update volume data if available
+                    if (e.Volumes.Count > 0)
+                    {
+                        MainChartControlElement.UpdateVolumeData(e.Volumes);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to update chart: {ex.Message}");
+            }
+        });
     }
 
     private void EquityCurve_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         if (_viewModel == null) return;
 
-        // Update chart on UI thread
-        Dispatcher.Invoke(() =>
-        {
-            try
-            {
-                // Clear existing plots
-                EquityChart.Plot.Clear();
-
-                if (_viewModel.EquityCurve.Count > 0)
-                {
-                    // Create data arrays
-                    var xs = Enumerable.Range(0, _viewModel.EquityCurve.Count)
-                        .Select(i => (double)i)
-                        .ToArray();
-                    var ys = _viewModel.EquityCurve.ToArray();
-
-                    // Add the equity curve
-                    var scatter = EquityChart.Plot.Add.Scatter(xs, ys);
-                    scatter.LineWidth = 2;
-                    scatter.MarkerSize = 0;
-                    scatter.Color = Colors.Blue;
-
-                    // Auto-scale axes
-                    EquityChart.Plot.Axes.AutoScale();
-                }
-
-                // Refresh the chart
-                EquityChart.Refresh();
-            }
-            catch
-            {
-                // Ignore chart update errors
-            }
-        });
+        // Note: With CandlestickChartControl, we don't need to update equity curve here
+        // The chart displays OHLC data, not equity curve
+        // Equity curve could be displayed in a separate panel if needed
     }
 
     private void SettingsButton_Click(object sender, RoutedEventArgs e)
@@ -197,6 +180,7 @@ public partial class MainWindow : Window
         
         if (_viewModel != null)
         {
+            _viewModel.OnOhlcDataLoaded -= OnOhlcDataLoaded;
             _viewModel.EquityCurve.CollectionChanged -= EquityCurve_CollectionChanged;
             _viewModel.Dispose();
         }
