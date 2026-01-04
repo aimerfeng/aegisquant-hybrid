@@ -221,4 +221,19 @@ public interface IBacktestService : IDisposable
     /// Gets the current account status.
     /// </summary>
     AccountStatus GetCurrentStatus();
+    
+    /// <summary>
+    /// Gets the OHLC data.
+    /// </summary>
+    List<ScottPlot.OHLC>? OhlcData { get; }
+    
+    /// <summary>
+    /// Gets the volume data.
+    /// </summary>
+    List<double>? VolumeData { get; }
+    
+    /// <summary>
+    /// Sets OHLC data directly (for data imported from Excel or other sources).
+    /// </summary>
+    void SetOhlcData(List<ScottPlot.OHLC> ohlcData, List<double> volumeData);
 }

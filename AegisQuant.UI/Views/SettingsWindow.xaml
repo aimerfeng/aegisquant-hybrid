@@ -4,15 +4,14 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="{DynamicResource SettingsTitle}"
-        Height="200" Width="350"
+        Title="系统设置"
+        Height="400" Width="500"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
         Background="{DynamicResource BackgroundBrush}">
 
     <Window.Resources>
-        <!-- ComboBox 下拉项样式 -->
         <Style TargetType="ComboBoxItem">
             <Setter Property="Background" Value="{DynamicResource CardBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
@@ -26,54 +25,182 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+        
+        <Style x:Key="SettingLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,12,0"/>
+        </Style>
+        
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+        </Style>
     </Window.Resources>
 
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Language Selection -->
-        <StackPanel Grid.Row="0">
-            <TextBlock Text="{DynamicResource Language}"
-                       FontWeight="Bold" FontSize="14" Margin="0,0,0,8"
-                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+        <!-- 界面设置 -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,20">
+            <TextBlock Text="界面设置" Style="{StaticResource SectionHeader}"/>
+            
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="语言:" Style="{StaticResource SettingLabel}"/>
+                <ComboBox x:Name="LanguageComboBox" Grid.Column="1"
+                          Width="200" HorizontalAlignment="Left"
+                          SelectionChanged="LanguageComboBox_SelectionChanged"
+                          Background="{DynamicResource CardBrush}" 
+                          Foreground="{DynamicResource PrimaryTextBrush}"
+                          BorderBrush="{DynamicResource BorderBrush}">
+                    <ComboBoxItem Tag="en-US" Content="English"/>
+                    <ComboBoxItem Tag="zh-CN" Content="中文 (简体)"/>
+                </ComboBox>
+            </Grid>
+            
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="主题:" Style="{StaticResource SettingLabel}"/>
+                <ComboBox x:Name="ThemeComboBox" Grid.Column="1"
+                          Width="200" HorizontalAlignment="Left"
+                          SelectionChanged="ThemeComboBox_SelectionChanged"
+                          Background="{DynamicResource CardBrush}" 
+                          Foreground="{DynamicResource PrimaryTextBrush}"
+                          BorderBrush="{DynamicResource BorderBrush}">
+                    <ComboBoxItem Tag="Dark" Content="深色主题"/>
+                    <ComboBoxItem Tag="Light" Content="浅色主题"/>
+                </ComboBox>
+            </Grid>
+            
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="颜色方案:" Style="{StaticResource SettingLabel}"/>
+                <ComboBox x:Name="ColorSchemeComboBox" Grid.Column="1"
+                          Width="200" HorizontalAlignment="Left"
+                          SelectionChanged="ColorSchemeComboBox_SelectionChanged"
+                          Background="{DynamicResource CardBrush}" 
+                          Foreground="{DynamicResource PrimaryTextBrush}"
+                          BorderBrush="{DynamicResource BorderBrush}">
+                    <ComboBoxItem Tag="International" Content="国际标准 (绿涨红跌)"/>
+                    <ComboBoxItem Tag="China" Content="中国标准 (红涨绿跌)"/>
+                </ComboBox>
+            </Grid>
+        </StackPanel>
 
-            <ComboBox x:Name="LanguageComboBox"
-                      Width="200" HorizontalAlignment="Left"
-                      SelectionChanged="LanguageComboBox_SelectionChanged"
-                      Background="{DynamicResource CardBrush}" 
-                      Foreground="{DynamicResource PrimaryTextBrush}"
-                      BorderBrush="{DynamicResource BorderBrush}">
-                <ComboBox.Resources>
-                    <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="#252526"/>
-                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#094771"/>
-                </ComboBox.Resources>
-                <ComboBoxItem Tag="en-US">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="" FontSize="16" Margin="0,0,8,0"/>
-                        <TextBlock Text="English" Foreground="{DynamicResource PrimaryTextBrush}"/>
-                    </StackPanel>
-                </ComboBoxItem>
-                <ComboBoxItem Tag="zh-CN">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="" FontSize="16" Margin="0,0,8,0"/>
-                        <TextBlock Text="中文 (简体)" Foreground="{DynamicResource PrimaryTextBrush}"/>
-                    </StackPanel>
-                </ComboBoxItem>
-            </ComboBox>
+        <!-- 环境设置 -->
+        <StackPanel Grid.Row="1" Margin="0,0,0,20">
+            <TextBlock Text="环境设置" Style="{StaticResource SectionHeader}"/>
+            
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="运行环境:" Style="{StaticResource SettingLabel}"/>
+                <ComboBox x:Name="EnvironmentComboBox" Grid.Column="1"
+                          Width="200" HorizontalAlignment="Left"
+                          SelectionChanged="EnvironmentComboBox_SelectionChanged"
+                          Background="{DynamicResource CardBrush}" 
+                          Foreground="{DynamicResource PrimaryTextBrush}"
+                          BorderBrush="{DynamicResource BorderBrush}">
+                    <ComboBoxItem Tag="Development" Content="开发环境"/>
+                    <ComboBoxItem Tag="Staging" Content="测试环境"/>
+                    <ComboBoxItem Tag="Production" Content="生产环境"/>
+                </ComboBox>
+            </Grid>
+        </StackPanel>
+
+        <!-- 回测设置 -->
+        <StackPanel Grid.Row="2" Margin="0,0,0,20">
+            <TextBlock Text="回测设置" Style="{StaticResource SectionHeader}"/>
+            
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="默认模式:" Style="{StaticResource SettingLabel}"/>
+                <ComboBox x:Name="BacktestModeComboBox" Grid.Column="1"
+                          Width="200" HorizontalAlignment="Left"
+                          Background="{DynamicResource CardBrush}" 
+                          Foreground="{DynamicResource PrimaryTextBrush}"
+                          BorderBrush="{DynamicResource BorderBrush}">
+                    <ComboBoxItem Tag="HighSpeed" Content="高速模式 (Rust引擎)"/>
+                    <ComboBoxItem Tag="Visual" Content="可视化模式 (逐K线)"/>
+                </ComboBox>
+            </Grid>
+            
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="初始资金:" Style="{StaticResource SettingLabel}"/>
+                <TextBox x:Name="InitialCapitalTextBox" Grid.Column="1"
+                         Width="200" HorizontalAlignment="Left"
+                         Text="100000"
+                         Background="{DynamicResource CardBrush}" 
+                         Foreground="{DynamicResource PrimaryTextBrush}"
+                         BorderBrush="{DynamicResource BorderBrush}"
+                         CaretBrush="{DynamicResource PrimaryTextBrush}"
+                         Padding="8,4"/>
+            </Grid>
+        </StackPanel>
+
+        <!-- 数据设置 -->
+        <StackPanel Grid.Row="3" Margin="0,0,0,20">
+            <TextBlock Text="数据设置" Style="{StaticResource SectionHeader}"/>
+            
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="数据目录:" Style="{StaticResource SettingLabel}"/>
+                <TextBox x:Name="DataDirectoryTextBox" Grid.Column="1"
+                         Text=""
+                         IsReadOnly="True"
+                         Background="{DynamicResource CardBrush}" 
+                         Foreground="{DynamicResource PrimaryTextBrush}"
+                         BorderBrush="{DynamicResource BorderBrush}"
+                         Padding="8,4" Margin="0,0,8,0"/>
+                <Button Grid.Column="2" Content="浏览..." 
+                        Click="BrowseDataDirectory_Click"
+                        Background="{DynamicResource CardBrush}" 
+                        Foreground="{DynamicResource PrimaryTextBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        Padding="12,4"/>
+            </Grid>
         </StackPanel>
 
         <!-- Buttons -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal"
+        <StackPanel Grid.Row="5" Orientation="Horizontal"
                     HorizontalAlignment="Right" Margin="0,20,0,0">
-            <Button Content="{DynamicResource OK}"
+            <Button Content="确定"
                     Width="80" Padding="8,4" Margin="0,0,8,0"
                     Click="OkButton_Click" IsDefault="True"
                     Background="{DynamicResource AccentBrush}" Foreground="White"/>
-            <Button Content="{DynamicResource Cancel}"
+            <Button Content="取消"
                     Width="80" Padding="8,4"
                     Click="CancelButton_Click" IsCancel="True"
                     Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"

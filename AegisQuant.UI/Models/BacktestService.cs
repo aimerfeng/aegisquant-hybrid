@@ -478,6 +478,7 @@ public class BacktestService : IBacktestService
 
     /// <summary>
     /// Converts tick data from file to OHLC format for charting.
+    /// Note: Event is raised after Task.Run completes to avoid cross-thread access issues.
     /// </summary>
     private async Task ConvertDataToOhlcAsync(string filePath)
     {
@@ -551,9 +552,12 @@ public class BacktestService : IBacktestService
                 }
             });
 
+            // Store data (these are not UI-bound, safe to set here)
             OhlcData = ohlcData;
             VolumeData = volumeData;
 
+            // Raise event AFTER Task.Run completes - this runs on the calling thread context
+            // The event handler (MainViewModel.OnOhlcDataLoadedHandler) will dispatch to UI thread
             if (ohlcData.Count > 0)
             {
                 RaiseLog(LogLevel.Info, $"Converted to {ohlcData.Count} OHLC bars");
@@ -566,6 +570,23 @@ public class BacktestService : IBacktestService
             OhlcData = new List<OHLC>();
             VolumeData = new List<double>();
         }
+    }
+
+    /// <summary>
+    /// Sets OHLC data directly (for data imported from Excel or other sources).
+    /// This bypasses the Rust engine data loading.
+    /// </summary>
+    /// <param name="ohlcData">OHLC data list</param>
+    /// <param name="volumeData">Volume data list</param>
+    public void SetOhlcData(List<OHLC> ohlcData, List<double> volumeData)
+    {
+        OhlcData = ohlcData;
+        VolumeData = volumeData;
+        
+        // Reset strategy context for new data
+        _strategyContext.Reset();
+        
+        RaiseLog(LogLevel.Info, $"OHLC data set directly: {ohlcData.Count} bars");
     }
 
     /// <summary>
@@ -751,8 +772,9 @@ public class BacktestService : IBacktestService
         // Record thread ID for verification (Requirements: 9.9)
         _driverLoopThreadId = Environment.CurrentManagedThreadId;
         
-        var bars = OhlcData ?? new List<OHLC>();
-        var volumes = VolumeData ?? new List<double>();
+        // Copy data to avoid cross-thread access issues with UI-created collections
+        var bars = OhlcData?.ToList() ?? new List<OHLC>();
+        var volumes = VolumeData?.ToList() ?? new List<double>();
         
         if (bars.Count == 0)
         {

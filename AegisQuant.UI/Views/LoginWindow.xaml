@@ -1,14 +1,114 @@
-<Window x:Class="AegisQuant.UI.Views.LoginWindow"
+﻿<Window x:Class="AegisQuant.UI.Views.LoginWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="AegisQuant 登录" Height="350" Width="400"
+        Title="AegisQuant 登录" 
+        MinHeight="420" MinWidth="380"
+        SizeToContent="Height"
+        Width="400"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         WindowStyle="SingleBorderWindow"
-        Background="{DynamicResource BackgroundBrush}">
+        Background="#1E1E2E">
+    
+    <Window.Resources>
+        <!-- 输入框样式 -->
+        <Style x:Key="InputTextBox" TargetType="TextBox">
+            <Setter Property="Background" Value="#2D2D3D"/>
+            <Setter Property="Foreground" Value="#E0E0E0"/>
+            <Setter Property="BorderBrush" Value="#3D3D4D"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="CaretBrush" Value="#E0E0E0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="#5B8DEF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <!-- 密码框样式 -->
+        <Style x:Key="InputPasswordBox" TargetType="PasswordBox">
+            <Setter Property="Background" Value="#2D2D3D"/>
+            <Setter Property="Foreground" Value="#E0E0E0"/>
+            <Setter Property="BorderBrush" Value="#3D3D4D"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="CaretBrush" Value="#E0E0E0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="PasswordBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="#5B8DEF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <!-- 登录按钮样式 -->
+        <Style x:Key="LoginButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#5B8DEF"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="20,14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#4A7CE0"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#3A6CD0"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="#4D4D5D"/>
+                                <Setter Property="Foreground" Value="#808080"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <!-- 复选框样式 -->
+        <Style x:Key="CheckBoxStyle" TargetType="CheckBox">
+            <Setter Property="Foreground" Value="#A0A0A0"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+    </Window.Resources>
     
     <Grid>
         <Grid.RowDefinitions>
@@ -16,49 +116,53 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         
-        <!-- 标题栏 -->
-        <Border Grid.Row="0" Background="{DynamicResource PrimaryButtonBrush}" Padding="20">
+        <!-- 标题区域 -->
+        <Border Grid.Row="0" Background="#252535" Padding="30,35">
             <StackPanel HorizontalAlignment="Center">
-                <TextBlock Text="AegisQuant" FontSize="28" FontWeight="Bold" 
-                           Foreground="White" HorizontalAlignment="Center"/>
-                <TextBlock Text="量化交易系统" FontSize="14" 
-                           Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                <TextBlock Text="AegisQuant" FontSize="32" FontWeight="Bold" 
+                           Foreground="#5B8DEF" HorizontalAlignment="Center"/>
+                <TextBlock Text="量化交易回测系统" FontSize="14" 
+                           Foreground="#808080" HorizontalAlignment="Center" Margin="0,8,0,0"/>
             </StackPanel>
         </Border>
         
         <!-- 登录表单 -->
-        <Border Grid.Row="1" Padding="30" Background="{DynamicResource SurfaceBrush}">
-            <StackPanel VerticalAlignment="Center">
+        <Border Grid.Row="1" Padding="35,30" Background="#1E1E2E">
+            <StackPanel>
                 <!-- 用户名 -->
-                <TextBlock Text="用户名" Margin="0,0,0,4" Foreground="{DynamicResource PrimaryTextBrush}"/>
-                <TextBox x:Name="UsernameTextBox" Padding="8" FontSize="14" Margin="0,0,0,16"
-                         Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
-                         BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
+                <TextBlock Text="用户名" Margin="0,0,0,8" Foreground="#C0C0C0" FontSize="13"/>
+                <TextBox x:Name="UsernameTextBox" Style="{StaticResource InputTextBox}" Margin="0,0,0,20"/>
                 
                 <!-- 密码 -->
-                <TextBlock Text="密码" Margin="0,0,0,4" Foreground="{DynamicResource PrimaryTextBrush}"/>
-                <PasswordBox x:Name="PasswordBox" Padding="8" FontSize="14" Margin="0,0,0,8"
-                             Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
-                             BorderBrush="{DynamicResource BorderBrush}"/>
+                <TextBlock Text="密码" Margin="0,0,0,8" Foreground="#C0C0C0" FontSize="13"/>
+                <PasswordBox x:Name="PasswordBox" Style="{StaticResource InputPasswordBox}" Margin="0,0,0,16"/>
                 
                 <!-- 记住我 -->
-                <CheckBox x:Name="RememberMeCheckBox" Content="记住我" Margin="0,0,0,16"
-                          Foreground="{DynamicResource PrimaryTextBrush}"/>
+                <CheckBox x:Name="RememberMeCheckBox" Content="记住登录状态" 
+                          Style="{StaticResource CheckBoxStyle}" Margin="0,0,0,20"/>
                 
                 <!-- 错误信息 -->
-                <TextBlock x:Name="ErrorText" Foreground="{DynamicResource ErrorBrush}" TextWrapping="Wrap" 
-                           Margin="0,0,0,16" Visibility="Collapsed"/>
+                <Border x:Name="ErrorBorder" Background="#3D2020" CornerRadius="6" 
+                        Padding="12,10" Margin="0,0,0,16" Visibility="Collapsed">
+                    <TextBlock x:Name="ErrorText" Foreground="#FF6B6B" TextWrapping="Wrap" FontSize="13"/>
+                </Border>
                 
                 <!-- 锁定信息 -->
-                <TextBlock x:Name="LockoutText" Foreground="{DynamicResource WarningBrush}" TextWrapping="Wrap" 
-                           Margin="0,0,0,16" Visibility="Collapsed"/>
+                <Border x:Name="LockoutBorder" Background="#3D3520" CornerRadius="6" 
+                        Padding="12,10" Margin="0,0,0,16" Visibility="Collapsed">
+                    <TextBlock x:Name="LockoutText" Foreground="#FFB347" TextWrapping="Wrap" FontSize="13"/>
+                </Border>
                 
                 <!-- 登录按钮 -->
-                <Button x:Name="LoginButton" Content="登录" 
-                        Background="{DynamicResource PrimaryButtonBrush}" Foreground="White"
-                        FontSize="14" FontWeight="Bold"
-                        Padding="16,10" Margin="0,8,0,0"
+                <Button x:Name="LoginButton" Content="登 录" 
+                        Style="{StaticResource LoginButtonStyle}"
+                        Margin="0,10,0,0"
                         Click="LoginButton_Click"/>
+                
+                <!-- 提示信息 -->
+                <TextBlock Text="默认账户: admin / admin123" 
+                           Foreground="#606060" FontSize="11" 
+                           HorizontalAlignment="Center" Margin="0,20,0,0"/>
             </StackPanel>
         </Border>
     </Grid>

@@ -687,4 +687,62 @@ public class ExcelDataImportService
 
         return string.Join(" + ", parts);
     }
+
+    /// <summary>
+    /// 读取 Excel 文件预览数据（用于导入向导）
+    /// </summary>
+    /// <param name="excelPath">Excel 文件路径</param>
+    /// <param name="maxRows">最大预览行数</param>
+    /// <returns>表头和数据行</returns>
+    public (string[] Headers, List<string[]> Rows) ReadExcelPreview(string excelPath, int maxRows = 5)
+    {
+        try
+        {
+            using var workbook = new XLWorkbook(excelPath);
+            var worksheet = workbook.Worksheets.First();
+            
+            var headerRow = worksheet.FirstRowUsed();
+            if (headerRow == null)
+                return (Array.Empty<string>(), new List<string[]>());
+
+            var lastColumn = worksheet.LastColumnUsed()?.ColumnNumber() ?? 0;
+            
+            // 读取表头
+            var headers = new string[lastColumn];
+            for (int col = 1; col <= lastColumn; col++)
+            {
+                headers[col - 1] = headerRow.Cell(col).GetString().Trim();
+            }
+
+            // 读取数据行
+            var rows = new List<string[]>();
+            var currentRow = headerRow.RowBelow();
+            var lastRow = worksheet.LastRowUsed();
+            
+            int rowCount = 0;
+            while (currentRow != null && currentRow.RowNumber() <= (lastRow?.RowNumber() ?? 0) && rowCount < maxRows)
+            {
+                var rowData = new string[lastColumn];
+                for (int col = 1; col <= lastColumn; col++)
+                {
+                    var cell = currentRow.Cell(col);
+                    if (cell.DataType == XLDataType.DateTime)
+                        rowData[col - 1] = cell.GetDateTime().ToString("yyyy-MM-dd HH:mm:ss");
+                    else if (cell.DataType == XLDataType.Number)
+                        rowData[col - 1] = cell.GetDouble().ToString("G");
+                    else
+                        rowData[col - 1] = cell.GetString();
+                }
+                rows.Add(rowData);
+                currentRow = currentRow.RowBelow();
+                rowCount++;
+            }
+
+            return (headers, rows);
+        }
+        catch
+        {
+            return (Array.Empty<string>(), new List<string[]>());
+        }
+    }
 }

@@ -1,11 +1,10 @@
-using System.Windows;
+﻿using System.Windows;
 using AegisQuant.UI.Services;
 
 namespace AegisQuant.UI.Views;
 
 /// <summary>
 /// 登录窗口
-/// Requirements: 14.1, 14.2, 14.3, 14.4
 /// </summary>
 public partial class LoginWindow : Window
 {
@@ -14,6 +13,7 @@ public partial class LoginWindow : Window
     
     private int _failedAttempts;
     private DateTime? _lockoutUntil;
+    private bool _autoLoginSuccess;
 
     public string? AuthenticatedUsername { get; private set; }
 
@@ -21,11 +21,14 @@ public partial class LoginWindow : Window
     {
         InitializeComponent();
         
-        // 尝试自动登录
-        TryAutoLogin();
+        // 检查自动登录
+        CheckAutoLogin();
+        
+        // 窗口加载后处理自动登录
+        Loaded += LoginWindow_Loaded;
     }
 
-    private void TryAutoLogin()
+    private void CheckAutoLogin()
     {
         var token = AuthenticationService.Instance.GetRememberToken();
         if (!string.IsNullOrEmpty(token))
@@ -35,20 +38,34 @@ public partial class LoginWindow : Window
             {
                 AuthenticatedUsername = username;
                 AuditLogService.Instance.LogLogin(username, true);
-                DialogResult = true;
-                Close();
+                _autoLoginSuccess = true;
             }
+        }
+    }
+
+    private void LoginWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (_autoLoginSuccess)
+        {
+            DialogResult = true;
+            Close();
+        }
+        else
+        {
+            UsernameTextBox.Focus();
         }
     }
 
     private void LoginButton_Click(object sender, RoutedEventArgs e)
     {
+        // 隐藏之前的错误
+        HideErrors();
+        
         // 检查锁定状态
         if (_lockoutUntil.HasValue && DateTime.Now < _lockoutUntil.Value)
         {
             var remaining = (_lockoutUntil.Value - DateTime.Now).TotalMinutes;
-            LockoutText.Text = $"账户已锁定，请在 {remaining:F0} 分钟后重试";
-            LockoutText.Visibility = Visibility.Visible;
+            ShowLockout($"账户已锁定，请在 {remaining:F0} 分钟后重试");
             return;
         }
 
@@ -85,9 +102,7 @@ public partial class LoginWindow : Window
             if (_failedAttempts >= MaxFailedAttempts)
             {
                 _lockoutUntil = DateTime.Now.AddMinutes(LockoutMinutes);
-                LockoutText.Text = $"登录失败次数过多，账户已锁定 {LockoutMinutes} 分钟";
-                LockoutText.Visibility = Visibility.Visible;
-                ErrorText.Visibility = Visibility.Collapsed;
+                ShowLockout($"登录失败次数过多，账户已锁定 {LockoutMinutes} 分钟");
                 LoginButton.IsEnabled = false;
                 
                 // 启动解锁计时器
@@ -100,14 +115,14 @@ public partial class LoginWindow : Window
                     timer.Stop();
                     _lockoutUntil = null;
                     _failedAttempts = 0;
-                    LockoutText.Visibility = Visibility.Collapsed;
+                    HideErrors();
                     LoginButton.IsEnabled = true;
                 };
                 timer.Start();
             }
             else
             {
-                ShowError($"用户名或密码错误 (剩余 {MaxFailedAttempts - _failedAttempts} 次尝试)");
+                ShowError($"用户名或密码错误（剩余 {MaxFailedAttempts - _failedAttempts} 次尝试机会）");
             }
         }
     }
@@ -115,6 +130,20 @@ public partial class LoginWindow : Window
     private void ShowError(string message)
     {
         ErrorText.Text = message;
-        ErrorText.Visibility = Visibility.Visible;
+        ErrorBorder.Visibility = Visibility.Visible;
+        LockoutBorder.Visibility = Visibility.Collapsed;
+    }
+
+    private void ShowLockout(string message)
+    {
+        LockoutText.Text = message;
+        LockoutBorder.Visibility = Visibility.Visible;
+        ErrorBorder.Visibility = Visibility.Collapsed;
+    }
+
+    private void HideErrors()
+    {
+        ErrorBorder.Visibility = Visibility.Collapsed;
+        LockoutBorder.Visibility = Visibility.Collapsed;
     }
 }

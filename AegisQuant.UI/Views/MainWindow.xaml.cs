@@ -27,9 +27,6 @@ public partial class MainWindow : Window
     private CancellationTokenSource? _displayUpdateCts;
     
     // UI elements (defined here for compatibility)
-    private TextBlock? CurrentStrategyNameText => FindName("CurrentStrategyNameText") as TextBlock;
-    private TextBlock? CurrentStrategyTypeText => FindName("CurrentStrategyTypeText") as TextBlock;
-    private Button? UseBuiltInButton => FindName("UseBuiltInButton") as Button;
     private StrategyListPanel? StrategyListPanelControl => FindName("StrategyListPanel") as StrategyListPanel;
     private CandlestickChartControl? MainChartControlElement => FindName("MainChartControl") as CandlestickChartControl;
     private ReplayControlPanel? ReplayControlPanelElement => FindName("ReplayControlPanel") as ReplayControlPanel;
@@ -167,13 +164,14 @@ public partial class MainWindow : Window
             // Requirements: 7.2, 7.3 - Signal logging
             backtestService.OnLogReceived += (s, e) =>
             {
-                LogPanelElement.AddLog(e.Level, e.Message);
+                // Use Dispatcher to ensure UI access from correct thread
+                Dispatcher.BeginInvoke(() => LogPanelElement.AddLog(e.Level, e.Message));
             };
 
             // Requirements: 7.2 - Signal logging
             backtestService.OnStrategySignal += (s, e) =>
             {
-                LogPanelElement.AddSignalLog(e.Signal, e.Price);
+                Dispatcher.BeginInvoke(() => LogPanelElement.AddSignalLog(e.Signal, e.Price));
             };
 
             // Requirements: 7.4 - Execution logging
@@ -181,7 +179,7 @@ public partial class MainWindow : Window
             {
                 var signal = e.Side == 0 ? Strategy.Signal.Buy : Strategy.Signal.Sell;
                 var orderId = $"ORD-{e.Timestamp:X8}";
-                LogPanelElement.AddExecutionLog(orderId, signal, e.Price, e.Quantity, true);
+                Dispatcher.BeginInvoke(() => LogPanelElement.AddExecutionLog(orderId, signal, e.Price, e.Quantity, true));
             };
         }
 
@@ -516,6 +514,173 @@ public partial class MainWindow : Window
 
         // Notify view model to use built-in strategy
         _viewModel?.ClearExternalStrategy();
+    }
+
+    /// <summary>
+    /// Opens the Import Wizard window for data import with column mapping and cleaning.
+    /// </summary>
+    private async void ImportWizardButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var importWindow = new ImportWizardWindow
+            {
+                Owner = this
+            };
+            
+            if (importWindow.ShowDialog() == true && importWindow.Result != null)
+            {
+                var config = importWindow.Result;
+                _viewModel?.AddLog(Interop.LogLevel.Info, $"开始导入数据: {System.IO.Path.GetFileName(config.FilePath)}");
+                
+                // 根据文件类型处理数据
+                var extension = System.IO.Path.GetExtension(config.FilePath).ToLowerInvariant();
+                
+                if (extension == ".xlsx" || extension == ".xls")
+                {
+                    // Excel 文件 - 使用 ExcelDataImportService
+                    var excelService = new ExcelDataImportService();
+                    var result = await excelService.ImportExcelAsync(config.FilePath);
+                    
+                    if (result.Success)
+                    {
+                        if (result.FormatType == ExcelDataImportService.DataFormatType.OHLC && result.OhlcData != null)
+                        {
+                            // OHLC 数据直接加载到图表
+                            if (_viewModel != null)
+                            {
+                                _viewModel.OhlcData = result.OhlcData;
+                                _viewModel.VolumeData = result.VolumeData;
+                                _viewModel.IsDataLoaded = true;
+                                _viewModel.DataFilePath = config.FilePath;
+                                _viewModel.StatusMessage = $"已导入 {result.RowCount} 条 K 线数据";
+                                _viewModel.InitializeReplay();
+                                
+                                // 更新图表
+                                MainChartControlElement?.UpdateOhlcData(result.OhlcData);
+                                if (result.VolumeData != null)
+                                {
+                                    MainChartControlElement?.UpdateVolumeData(result.VolumeData);
+                                }
+                            }
+                            _viewModel?.AddLog(Interop.LogLevel.Info, $"成功导入 {result.RowCount} 条 OHLC 数据");
+                        }
+                        else if (!string.IsNullOrEmpty(result.CsvFilePath))
+                        {
+                            // Tick 数据 - 加载生成的 CSV 文件
+                            await LoadDataFromFileAsync(result.CsvFilePath);
+                            _viewModel?.AddLog(Interop.LogLevel.Info, $"成功导入 {result.RowCount} 条 Tick 数据");
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show($"导入失败: {result.ErrorMessage}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+                else
+                {
+                    // CSV 文件 - 直接加载
+                    await LoadDataFromFileAsync(config.FilePath);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"导入数据失败:\n{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            _viewModel?.AddLog(Interop.LogLevel.Error, $"导入失败: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Loads data from a file path.
+    /// </summary>
+    private async Task LoadDataFromFileAsync(string filePath)
+    {
+        if (_viewModel == null || _backtestService == null) return;
+        
+        try
+        {
+            _viewModel.StatusMessage = "正在加载数据...";
+            
+            // 如果服务处于 Faulted 状态，先重置
+            if (_backtestService.State == Services.Interfaces.ServiceState.Faulted)
+            {
+                _backtestService.Reset();
+            }
+            
+            // 初始化引擎
+            var strategyParams = new Interop.StrategyParams
+            {
+                ShortMaPeriod = _viewModel.ShortMaPeriod,
+                LongMaPeriod = _viewModel.LongMaPeriod,
+                PositionSize = _viewModel.PositionSize,
+                StopLossPct = _viewModel.StopLossPct / 100.0,
+                TakeProfitPct = _viewModel.TakeProfitPct / 100.0
+            };
+
+            var riskConfig = new Interop.RiskConfig
+            {
+                MaxOrderRate = _viewModel.MaxOrderRate,
+                MaxPositionSize = _viewModel.MaxPositionSize,
+                MaxOrderValue = _viewModel.MaxOrderValue,
+                MaxDrawdownPct = _viewModel.MaxDrawdownPct / 100.0
+            };
+
+            _backtestService.Initialize(strategyParams, riskConfig);
+            
+            var report = await _backtestService.LoadDataAsync(filePath);
+            
+            _viewModel.DataFilePath = filePath;
+            _viewModel.IsDataLoaded = true;
+            _viewModel.DataQualityReport = report;
+            _viewModel.StatusMessage = $"已加载 {report.ValidTicks:N0} 条数据 - {System.IO.Path.GetFileName(filePath)}";
+            
+            // 初始化回放
+            _viewModel.InitializeReplay();
+        }
+        catch (Exception ex)
+        {
+            _viewModel.StatusMessage = $"加载失败: {ex.Message}";
+            _viewModel.AddLog(Interop.LogLevel.Error, $"数据加载失败: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Opens the Audit Log window.
+    /// </summary>
+    private void AuditLogButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var auditWindow = new AuditLogWindow
+            {
+                Owner = this
+            };
+            auditWindow.Show();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"打开审计日志失败:\n{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// Opens the Notification Settings window.
+    /// </summary>
+    private void NotificationButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var notificationWindow = new NotificationSettingsWindow
+            {
+                Owner = this
+            };
+            notificationWindow.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"打开通知设置失败:\n{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void Window_Closing(object? sender, CancelEventArgs e)

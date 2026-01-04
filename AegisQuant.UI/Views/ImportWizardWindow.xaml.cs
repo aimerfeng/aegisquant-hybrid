@@ -32,6 +32,11 @@ public partial class ImportWizardWindow : Window
     /// </summary>
     public DataImportConfig? Result { get; private set; }
 
+    /// <summary>
+    /// Gets the path to the imported/converted file.
+    /// </summary>
+    public string? ImportedFilePath => Result?.FilePath;
+
     public ImportWizardWindow()
     {
         InitializeComponent();
@@ -54,8 +59,8 @@ public partial class ImportWizardWindow : Window
     {
         var dialog = new OpenFileDialog
         {
-            Filter = "CSV Files (*.csv)|*.csv|All Files (*.*)|*.*",
-            Title = "Select Data File"
+            Filter = "所有支持格式 (*.csv;*.xlsx;*.xls)|*.csv;*.xlsx;*.xls|Excel 文件 (*.xlsx;*.xls)|*.xlsx;*.xls|CSV 文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
+            Title = "选择数据文件"
         };
 
         if (dialog.ShowDialog() == true)
@@ -65,7 +70,7 @@ public partial class ImportWizardWindow : Window
     }
 
     /// <summary>
-    /// Loads preview data from the specified CSV file.
+    /// Loads preview data from the specified file (CSV or Excel).
     /// Only reads the first 5 rows for preview.
     /// </summary>
     public async Task LoadPreviewAsync(string filePath)
@@ -78,23 +83,17 @@ public partial class ImportWizardWindow : Window
         {
             _previewRows.Clear();
             
-            // Read only first 6 lines (header + 5 data rows)
-            using var reader = new StreamReader(filePath);
-            var headerLine = await reader.ReadLineAsync();
+            var extension = Path.GetExtension(filePath).ToLowerInvariant();
             
-            if (string.IsNullOrEmpty(headerLine))
+            if (extension == ".xlsx" || extension == ".xls")
             {
-                ShowError("File is empty or has no header row.");
-                return;
+                // Excel 文件处理
+                await LoadExcelPreviewAsync(filePath);
             }
-
-            _headers = ParseCsvLine(headerLine);
-
-            for (int i = 0; i < 5 && !reader.EndOfStream; i++)
+            else
             {
-                var line = await reader.ReadLineAsync();
-                if (!string.IsNullOrEmpty(line))
-                    _previewRows.Add(ParseCsvLine(line));
+                // CSV 文件处理
+                await LoadCsvPreviewAsync(filePath);
             }
 
             // Auto-detect column mappings
@@ -109,8 +108,45 @@ public partial class ImportWizardWindow : Window
         }
         catch (Exception ex)
         {
-            ShowError($"Error reading file: {ex.Message}");
+            ShowError($"读取文件错误: {ex.Message}");
             ImportButton.IsEnabled = false;
+        }
+    }
+
+    private async Task LoadCsvPreviewAsync(string filePath)
+    {
+        using var reader = new StreamReader(filePath);
+        var headerLine = await reader.ReadLineAsync();
+        
+        if (string.IsNullOrEmpty(headerLine))
+        {
+            ShowError("文件为空或没有标题行。");
+            return;
+        }
+
+        _headers = ParseCsvLine(headerLine);
+
+        for (int i = 0; i < 5 && !reader.EndOfStream; i++)
+        {
+            var line = await reader.ReadLineAsync();
+            if (!string.IsNullOrEmpty(line))
+                _previewRows.Add(ParseCsvLine(line));
+        }
+    }
+
+    private async Task LoadExcelPreviewAsync(string filePath)
+    {
+        await Task.Run(() =>
+        {
+            var excelService = new ExcelDataImportService();
+            var (headers, rows) = excelService.ReadExcelPreview(filePath, 5);
+            _headers = headers;
+            _previewRows = rows;
+        });
+        
+        if (_headers.Length == 0)
+        {
+            ShowError("Excel 文件为空或无法读取。");
         }
     }
 

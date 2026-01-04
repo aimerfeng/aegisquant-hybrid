@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using AegisQuant.UI.Services;
 using AegisQuant.UI.Services.Interfaces;
@@ -8,37 +8,57 @@ using AegisQuant.UI.Views;
 
 namespace AegisQuant.UI;
 
-/// <summary>
-/// Interaction logic for App.xaml
-/// </summary>
 public partial class App : Application
 {
-    /// <summary>
-    /// Gets the service provider for dependency injection.
-    /// </summary>
     public IServiceProvider Services { get; private set; } = null!;
 
     private void Application_Startup(object sender, StartupEventArgs e)
     {
-        // Configure DI container
-        var services = new ServiceCollection();
-        ConfigureServices(services);
-        Services = services.BuildServiceProvider();
-        
-        // 初始化语言设置
-        LocalizationService.Initialize();
-        
-        // 初始化配色方案服务
-        ColorSchemeService.Instance.Initialize();
-        
-        // Create and show main window via DI
-        var mainWindow = Services.GetRequiredService<MainWindow>();
-        mainWindow.Show();
+        try
+        {
+            var services = new ServiceCollection();
+            ConfigureServices(services);
+            Services = services.BuildServiceProvider();
+
+            LocalizationService.Initialize();
+            ColorSchemeService.Instance.Initialize();
+
+            var loginWindow = new LoginWindow();
+            var loginResult = loginWindow.ShowDialog();
+
+            if (loginResult == true)
+            {
+                try
+                {
+                    // 登录成功后切换到主窗口关闭时退出模式
+                    ShutdownMode = ShutdownMode.OnMainWindowClose;
+
+                    var mainWindow = Services.GetRequiredService<MainWindow>();
+                    MainWindow = mainWindow;
+                    mainWindow.Show();
+                }
+                catch (Exception mainEx)
+                {
+                    MessageBox.Show($"创建主窗口失败:\n{mainEx.Message}\n\n内部错误:\n{mainEx.InnerException?.Message}\n\n{mainEx.StackTrace}",
+                        "主窗口错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Shutdown();
+                }
+            }
+            else
+            {
+                Shutdown();
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"启动错误:\n{ex.Message}\n\n内部错误:\n{ex.InnerException?.Message}\n\n{ex.StackTrace}",
+                "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown();
+        }
     }
 
     private void ConfigureServices(IServiceCollection services)
     {
-        // Singletons - shared across the application
         services.AddSingleton<IBacktestService, BacktestService>();
         services.AddSingleton<IStrategyManagerService, StrategyManagerService>();
         services.AddSingleton<IReplayService, StrategyReplayServiceAdapter>();
@@ -46,16 +66,12 @@ public partial class App : Application
         services.AddSingleton<ILoggingService, LoggingService>();
         services.AddSingleton<PythonRuntimeService>();
         services.AddSingleton<MultiStrategyManagerService>();
-        
-        // Transients - new instance each time
-        // MainViewModel needs both IBacktestService and IReplayService
+
         services.AddTransient<MainViewModel>(sp => new MainViewModel(
             sp.GetRequiredService<IBacktestService>(),
             sp.GetRequiredService<IReplayService>()
         ));
-        
-        // MainWindow needs IReplayService and IBacktestService for chart updates and data flow
-        // Requirements: 9.10, 9.11 - Channel-based display updates
+
         services.AddTransient<MainWindow>(sp => new MainWindow(
             sp.GetRequiredService<MainViewModel>(),
             sp.GetRequiredService<IStrategyManagerService>(),

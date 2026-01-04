@@ -410,13 +410,35 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         try
         {
+            // 如果服务处于 Faulted 状态，先重置
+            if (_backtestService.State == Services.Interfaces.ServiceState.Faulted)
+            {
+                AddLog(LogLevel.Info, "重置服务状态...");
+                _backtestService.Reset();
+            }
+
             // Re-initialize engine with current parameters
             InitializeEngine();
 
-            // Reload data if needed
-            if (!string.IsNullOrEmpty(DataFilePath))
+            // 检查是否有 OHLC 数据（可能是从 Excel 直接导入的）
+            bool hasOhlcData = OhlcData != null && OhlcData.Count > 0;
+            
+            // Reload data if needed - 只有当没有 OHLC 数据且有文件路径时才重新加载
+            if (!hasOhlcData && !string.IsNullOrEmpty(DataFilePath))
             {
-                await _backtestService.LoadDataAsync(DataFilePath);
+                var extension = System.IO.Path.GetExtension(DataFilePath).ToLowerInvariant();
+                // 跳过 Excel 文件，因为 Rust 引擎不支持
+                if (extension != ".xlsx" && extension != ".xls")
+                {
+                    await _backtestService.LoadDataAsync(DataFilePath);
+                }
+            }
+            
+            // 如果有 OHLC 数据但 BacktestService 没有，同步数据
+            if (hasOhlcData && (_backtestService.OhlcData == null || _backtestService.OhlcData.Count == 0))
+            {
+                // 直接设置 OHLC 数据到 BacktestService
+                _backtestService.SetOhlcData(OhlcData!, VolumeData ?? new List<double>());
             }
 
             // Clear previous results
@@ -426,14 +448,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
             Progress = 0;
 
             IsRunning = true;
-            StatusMessage = "Running backtest...";
+            StatusMessage = "正在运行回测...";
 
             await _backtestService.RunBacktestAsync();
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Backtest failed: {ex.Message}";
-            AddLog(LogLevel.Error, $"Backtest error: {ex.Message}");
+            StatusMessage = $"回测失败: {ex.Message}";
+            AddLog(LogLevel.Error, $"回测错误: {ex.Message}");
             IsRunning = false;
         }
     }
