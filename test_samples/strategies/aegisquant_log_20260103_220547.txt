@@ -1,0 +1,15 @@
+22:05:17.125 [INFO] Switched to built-in DualMA strategy
+22:05:17.125 [INFO] Switched to built-in DualMA strategy
+22:05:17.134 [INFO] Engine initialized successfully
+22:05:24.670 [INFO] Loading data from: D:\工作\AegisTrader\test_samples\data\600519_maotai_2024.csv
+22:05:24.704 [INFO] Converted to 98 OHLC bars
+22:05:24.728 [INFO] Data loaded: 0 valid ticks, 0 invalid, 0 anomalies
+22:05:42.643 [INFO] Strategy loaded: 双均线交叉策略 (JsonConfig)
+22:05:42.644 [INFO] External strategy set: 双均线交叉策略
+22:05:42.644 [INFO] Loaded external strategy: 双均线交叉策略
+22:05:44.680 [INFO] Engine initialized successfully
+22:05:44.680 [INFO] Loading data from: D:\工作\AegisTrader\test_samples\data\600519_maotai_2024.csv
+22:05:44.683 [INFO] Converted to 98 OHLC bars
+22:05:44.683 [INFO] Data loaded: 0 valid ticks, 0 invalid, 0 anomalies
+22:05:44.686 [INFO] Starting backtest...
+22:05:44.687 [INFO] Backtest completed in 0.00s. Final equity: 100000.00

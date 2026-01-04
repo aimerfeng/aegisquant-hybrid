@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <!-- MVVM Framework -->
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
     
     <!-- Charting Library -->

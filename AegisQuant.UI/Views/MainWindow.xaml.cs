@@ -27,6 +27,7 @@ public partial class MainWindow : Window
     private Button? UseBuiltInButton => FindName("UseBuiltInButton") as Button;
     private StrategyListPanel? StrategyListPanelControl => FindName("StrategyListPanel") as StrategyListPanel;
     private CandlestickChartControl? MainChartControlElement => FindName("MainChartControl") as CandlestickChartControl;
+    private ChartViewModel _chartViewModel = new();
 
     public MainWindow()
     {

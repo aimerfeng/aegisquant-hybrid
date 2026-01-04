@@ -270,27 +270,46 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Filter = "Data Files (*.csv;*.parquet)|*.csv;*.parquet|CSV Files (*.csv)|*.csv|Parquet Files (*.parquet)|*.parquet|All Files (*.*)|*.*",
-            Title = "Select Data File"
+            Filter = "所有支持格式 (*.csv;*.parquet;*.xlsx;*.xls)|*.csv;*.parquet;*.xlsx;*.xls|Excel 文件 (*.xlsx;*.xls)|*.xlsx;*.xls|CSV 文件 (*.csv)|*.csv|Parquet 文件 (*.parquet)|*.parquet|所有文件 (*.*)|*.*",
+            Title = "选择数据文件"
         };
 
         if (dialog.ShowDialog() == true)
         {
             try
             {
-                StatusMessage = "Loading data...";
-                DataFilePath = dialog.FileName;
+                StatusMessage = "正在加载数据...";
+                var filePath = dialog.FileName;
+                var extension = System.IO.Path.GetExtension(filePath).ToLowerInvariant();
 
-                var report = await _backtestService.LoadDataAsync(dialog.FileName);
+                // 如果是 Excel 文件，先转换为 CSV
+                if (extension == ".xlsx" || extension == ".xls")
+                {
+                    AddLog(LogLevel.Info, $"正在导入 Excel 文件: {System.IO.Path.GetFileName(filePath)}");
+                    var excelService = new Services.ExcelDataImportService();
+                    var importResult = await excelService.ImportExcelAsync(filePath);
+
+                    if (!importResult.Success)
+                    {
+                        throw new Exception(importResult.ErrorMessage);
+                    }
+
+                    AddLog(LogLevel.Info, $"Excel 导入成功: {importResult.RowCount} 行数据，格式: {importResult.DetectedFormat}");
+                    filePath = importResult.CsvFilePath!;
+                }
+
+                DataFilePath = dialog.FileName; // 保存原始文件路径用于显示
+
+                var report = await _backtestService.LoadDataAsync(filePath);
 
                 DataQualityReport = report;
                 IsDataLoaded = true;
-                StatusMessage = $"Loaded {report.ValidTicks:N0} ticks from {System.IO.Path.GetFileName(dialog.FileName)}";
+                StatusMessage = $"已加载 {report.ValidTicks:N0} 条数据 - {System.IO.Path.GetFileName(dialog.FileName)}";
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Failed to load data: {ex.Message}";
-                AddLog(LogLevel.Error, $"Data load failed: {ex.Message}");
+                StatusMessage = $"加载失败: {ex.Message}";
+                AddLog(LogLevel.Error, $"数据加载失败: {ex.Message}");
                 IsDataLoaded = false;
             }
         }

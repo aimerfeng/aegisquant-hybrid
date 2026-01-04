@@ -1,4 +1,4 @@
-using AegisQuant.Interop;
+﻿using AegisQuant.Interop;
 using AegisQuant.UI.Strategy;
 using AegisQuant.UI.Services;
 using ScottPlot;
@@ -339,8 +339,10 @@ public class BacktestService : IDisposable
                     }
 
                     // Convert nanoseconds to DateTime and round to minute
-                    var dt = DateTimeOffset.FromUnixTimeMilliseconds(timestamp / 1_000_000).DateTime;
-                    var minuteKey = new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, 0);
+                    // Auto-detect nanoseconds (19 digits) vs milliseconds (13 digits)
+                    var ms = timestamp > 9999999999999L ? timestamp / 1_000_000 : timestamp;
+                    var dt = DateTimeOffset.FromUnixTimeMilliseconds(ms).DateTime;
+                    var minuteKey = new DateTime(dt.Year, dt.Month, dt.Day, 0, 0, 0);
 
                     if (!ticksByMinute.ContainsKey(minuteKey))
                     {
@@ -361,7 +363,7 @@ public class BacktestService : IDisposable
                     var low = ticks.Min(t => t.price);
                     var totalVolume = ticks.Sum(t => t.volume);
 
-                    ohlcData.Add(new OHLC(open, high, low, close, kvp.Key, TimeSpan.FromMinutes(1)));
+                    ohlcData.Add(new OHLC(open, high, low, close, kvp.Key, TimeSpan.FromDays(1)));
                     volumeData.Add(totalVolume);
                 }
             });

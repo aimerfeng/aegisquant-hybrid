@@ -1,4 +1,4 @@
-<Application x:Class="AegisQuant.UI.App"
+﻿<Application x:Class="AegisQuant.UI.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:converters="clr-namespace:AegisQuant.UI.Converters"
@@ -8,7 +8,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <!-- Default language (will be replaced at runtime) -->
-                <ResourceDictionary Source="Resources/Strings.en-US.xaml"/>
+                <ResourceDictionary Source="Resources/Strings.zh-CN.xaml"/>
                 <!-- Default theme (will be replaced at runtime) -->
                 <ResourceDictionary Source="Resources/DarkTheme.xaml"/>
             </ResourceDictionary.MergedDictionaries>
@@ -51,6 +51,21 @@
                 <Setter Property="Background" Value="{DynamicResource CardBrush}"/>
                 <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            </Style>
+            
+            <!-- ComboBoxItem 全局样式 - 修复下拉项看不清的问题 -->
+            <Style TargetType="ComboBoxItem">
+                <Setter Property="Background" Value="{DynamicResource CardBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                <Setter Property="Padding" Value="8,4"/>
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+                    </Trigger>
+                    <Trigger Property="IsSelected" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource SelectedBrush}"/>
+                    </Trigger>
+                </Style.Triggers>
             </Style>
             
             <Style TargetType="ListView">

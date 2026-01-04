@@ -5,12 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:AegisQuant.UI.ViewModels"
         xmlns:converters="clr-namespace:AegisQuant.UI.Converters"
+        xmlns:controls="clr-namespace:AegisQuant.UI.Controls"
         xmlns:interop="clr-namespace:AegisQuant.Interop;assembly=AegisQuant.Interop"
-        xmlns:scottplot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        Title="AegisQuant - Quantitative Backtesting System"
+        Title="AegisQuant - 量化回测系统"
         Height="900" Width="1400"
         WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource BackgroundBrush}"
+        Foreground="{DynamicResource PrimaryTextBrush}"
         Closing="Window_Closing">
 
     <Window.DataContext>
@@ -27,74 +29,114 @@
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
         </Style>
         
         <Style x:Key="MetricLabel" TargetType="TextBlock">
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Foreground" Value="Gray"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
         </Style>
         
         <Style x:Key="MetricValue" TargetType="TextBlock">
             <Setter Property="FontSize" Value="18"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+        </Style>
+        
+        <Style x:Key="ToolbarButton" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource CardBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource SelectedBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Window.Resources>
 
-    <Grid>
+    <Grid Background="{DynamicResource BackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         
-        <!-- Toolbar -->
-        <ToolBarTray Grid.Row="0" Background="#F5F5F5">
-            <ToolBar Band="0" BandIndex="0">
-                <Button Command="{Binding LoadDataCommand}" ToolTip="{DynamicResource LoadDataTooltip}">
-                    <TextBlock Text="{DynamicResource LoadData}"/>
+        <!-- 工具栏 -->
+        <Border Grid.Row="0" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
+            <WrapPanel>
+                <Button Style="{StaticResource ToolbarButton}" Command="{Binding LoadDataCommand}" ToolTip="加载数据">
+                    <TextBlock Text="加载数据" Foreground="{DynamicResource PrimaryTextBrush}"/>
                 </Button>
-                <Separator/>
-                <Button Click="LoadStrategyButton_Click" ToolTip="加载外部策略文件">
-                    <TextBlock Text="加载策略" Foreground="Blue"/>
+                <Rectangle Width="1" Fill="{DynamicResource BorderBrush}" Margin="8,4"/>
+                <Button Style="{StaticResource ToolbarButton}" Click="LoadStrategyButton_Click" ToolTip="加载外部策略文件">
+                    <TextBlock Text="加载策略" Foreground="{DynamicResource AccentTextBrush}" FontWeight="SemiBold"/>
                 </Button>
-                <Button Click="NewStrategyButton_Click" ToolTip="创建新策略">
-                    <TextBlock Text="新建策略" Foreground="Blue"/>
+                <Button Style="{StaticResource ToolbarButton}" Click="NewStrategyButton_Click" ToolTip="创建新策略">
+                    <TextBlock Text="新建策略" Foreground="{DynamicResource AccentTextBrush}" FontWeight="SemiBold"/>
                 </Button>
-                <Separator/>
-                <Button Command="{Binding StartBacktestCommand}" ToolTip="{DynamicResource StartTooltip}">
-                    <TextBlock Text="{DynamicResource Start}" Foreground="Green"/>
+                <Rectangle Width="1" Fill="{DynamicResource BorderBrush}" Margin="8,4"/>
+                <Button Style="{StaticResource ToolbarButton}" Command="{Binding StartBacktestCommand}" ToolTip="开始回测">
+                    <TextBlock Text="开始" Foreground="{DynamicResource SuccessBrush}"/>
                 </Button>
-                <Button Command="{Binding StopBacktestCommand}" ToolTip="{DynamicResource StopTooltip}">
-                    <TextBlock Text="{DynamicResource Stop}" Foreground="Red"/>
+                <Button Style="{StaticResource ToolbarButton}" Command="{Binding StopBacktestCommand}" ToolTip="停止回测">
+                    <TextBlock Text="停止" Foreground="{DynamicResource ErrorBrush}"/>
                 </Button>
-                <Separator/>
-                <Button Command="{Binding OpenOptimizationCommand}" ToolTip="{DynamicResource OptimizeTooltip}">
-                    <TextBlock Text="{DynamicResource Optimize}"/>
+                <Rectangle Width="1" Fill="{DynamicResource BorderBrush}" Margin="8,4"/>
+                <Button Style="{StaticResource ToolbarButton}" Command="{Binding OpenOptimizationCommand}" ToolTip="参数优化">
+                    <TextBlock Text="优化" Foreground="{DynamicResource PrimaryTextBrush}"/>
                 </Button>
-                <Separator/>
-                <Button Click="SettingsButton_Click" ToolTip="{DynamicResource SettingsTooltip}">
-                    <TextBlock Text="{DynamicResource Settings}"/>
+                <Rectangle Width="1" Fill="{DynamicResource BorderBrush}" Margin="8,4"/>
+                <Button Style="{StaticResource ToolbarButton}" Click="SettingsButton_Click" ToolTip="设置">
+                    <TextBlock Text="设置" Foreground="{DynamicResource PrimaryTextBrush}"/>
                 </Button>
-                <Separator/>
-                <TextBlock Text="{DynamicResource Progress}" VerticalAlignment="Center" Margin="8,0,4,0"/>
-                <ProgressBar Width="150" Height="18" Value="{Binding Progress}" Minimum="0" Maximum="100"/>
-                <TextBlock Text="{Binding Progress, StringFormat={}{0:F1}%}" VerticalAlignment="Center" Margin="4,0,0,0"/>
-            </ToolBar>
-        </ToolBarTray>
+                <Rectangle Width="1" Fill="{DynamicResource BorderBrush}" Margin="8,4"/>
+                <TextBlock Text="进度:" VerticalAlignment="Center" Margin="8,0,4,0" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                <Border Background="{DynamicResource CardBrush}" CornerRadius="4" Padding="2" VerticalAlignment="Center">
+                    <ProgressBar Width="150" Height="16" Value="{Binding Progress}" Minimum="0" Maximum="100" 
+                                 Background="{DynamicResource CardBrush}" Foreground="{DynamicResource AccentBrush}"/>
+                </Border>
+                <TextBlock Text="{Binding Progress, StringFormat={}{0:F1}%}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="{DynamicResource PrimaryTextBrush}"/>
+            </WrapPanel>
+        </Border>
 
-        <!-- Main Content -->
-        <Grid Grid.Row="1" Margin="8">
+        <!-- 主内容区 -->
+        <Grid Grid.Row="1" Margin="8" Background="{DynamicResource BackgroundBrush}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="280"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="300"/>
             </Grid.ColumnDefinitions>
             
-            <!-- Left Panel - Parameters -->
-            <Border Grid.Column="0" BorderBrush="#DDD" BorderThickness="1" CornerRadius="4" Margin="0,0,8,0" Padding="12">
+            <!-- 左侧面板 - 参数 -->
+            <Border Grid.Column="0" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="0,0,8,0" Padding="12">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <TextBlock Text="{DynamicResource StrategyParameters}" Style="{StaticResource HeaderText}"/>
+                        <TextBlock Text="策略参数" Style="{StaticResource HeaderText}"/>
                         <Grid Margin="0,0,0,16">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -108,23 +150,38 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             
-                            <Label Grid.Row="0" Content="{DynamicResource ShortMaPeriod}"/>
-                            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding ShortMaPeriod, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                            <Label Grid.Row="0" Content="短期均线:" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding ShortMaPeriod, UpdateSourceTrigger=PropertyChanged}" 
+                                     IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"
+                                     Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}" 
+                                     BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
                             
-                            <Label Grid.Row="1" Content="{DynamicResource LongMaPeriod}"/>
-                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding LongMaPeriod, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                            <Label Grid.Row="1" Content="长期均线:" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding LongMaPeriod, UpdateSourceTrigger=PropertyChanged}" 
+                                     IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"
+                                     Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}" 
+                                     BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
                             
-                            <Label Grid.Row="2" Content="{DynamicResource PositionSize}"/>
-                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding PositionSize, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                            <Label Grid.Row="2" Content="仓位大小:" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding PositionSize, UpdateSourceTrigger=PropertyChanged}" 
+                                     IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"
+                                     Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}" 
+                                     BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
                             
-                            <Label Grid.Row="3" Content="{DynamicResource StopLossPct}"/>
-                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding StopLossPct, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                            <Label Grid.Row="3" Content="止损比例%:" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding StopLossPct, UpdateSourceTrigger=PropertyChanged}" 
+                                     IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"
+                                     Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}" 
+                                     BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
                             
-                            <Label Grid.Row="4" Content="{DynamicResource TakeProfitPct}"/>
-                            <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding TakeProfitPct, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                            <Label Grid.Row="4" Content="止盈比例%:" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding TakeProfitPct, UpdateSourceTrigger=PropertyChanged}" 
+                                     IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"
+                                     Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}" 
+                                     BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
                         </Grid>
                         
-                        <TextBlock Text="{DynamicResource RiskConfiguration}" Style="{StaticResource HeaderText}"/>
+                        <TextBlock Text="风控配置" Style="{StaticResource HeaderText}"/>
                         <Grid Margin="0,0,0,16">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -137,41 +194,55 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             
-                            <Label Grid.Row="0" Content="{DynamicResource MaxOrderRate}"/>
-                            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding MaxOrderRate, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                            <Label Grid.Row="0" Content="最大下单频率:" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding MaxOrderRate, UpdateSourceTrigger=PropertyChanged}" 
+                                     IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"
+                                     Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}" 
+                                     BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
                             
-                            <Label Grid.Row="1" Content="{DynamicResource MaxPosition}"/>
-                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding MaxPositionSize, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                            <Label Grid.Row="1" Content="最大持仓:" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding MaxPositionSize, UpdateSourceTrigger=PropertyChanged}" 
+                                     IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"
+                                     Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}" 
+                                     BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
                             
-                            <Label Grid.Row="2" Content="{DynamicResource MaxOrderValue}"/>
-                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding MaxOrderValue, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                            <Label Grid.Row="2" Content="最大订单金额:" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding MaxOrderValue, UpdateSourceTrigger=PropertyChanged}" 
+                                     IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"
+                                     Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}" 
+                                     BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
                             
-                            <Label Grid.Row="3" Content="{DynamicResource MaxDrawdownPct}"/>
-                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding MaxDrawdownPct, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"/>
+                            <Label Grid.Row="3" Content="最大回撤%:" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding MaxDrawdownPct, UpdateSourceTrigger=PropertyChanged}" 
+                                     IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBoolConverter}}"
+                                     Background="{DynamicResource CardBrush}" Foreground="{DynamicResource PrimaryTextBrush}" 
+                                     BorderBrush="{DynamicResource BorderBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
                         </Grid>
                         
-                        <TextBlock Text="{DynamicResource DataInformation}" Style="{StaticResource HeaderText}"/>
-                        <TextBlock Text="{Binding DataFilePath}" TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="0,0,0,8"/>
+                        <TextBlock Text="数据信息" Style="{StaticResource HeaderText}"/>
+                        <TextBlock Text="{Binding DataFilePath}" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" Margin="0,0,0,8"/>
                     </StackPanel>
                 </ScrollViewer>
             </Border>
 
-            <!-- Center Panel - Chart -->
+            <!-- 中间面板 - 图表 -->
             <Grid Grid.Column="1" Margin="0,0,8,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 
-                <Border Grid.Row="0" BorderBrush="#DDD" BorderThickness="1" CornerRadius="4">
+                <Border Grid.Row="0" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
                     <Grid>
-                        <scottplot:WpfPlot x:Name="EquityChart" Margin="4"/>
-                        <TextBlock Text="{DynamicResource ChartPlaceholder}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Gray" FontSize="14" Visibility="{Binding IsDataLoaded, Converter={StaticResource InverseBoolToVisConverter}}"/>
+                        <controls:CandlestickChartControl x:Name="MainChartControl" Margin="4"/>
+                        <TextBlock Text="加载数据并运行回测以查看净值曲线" HorizontalAlignment="Center" VerticalAlignment="Center" 
+                                   Foreground="{DynamicResource SecondaryTextBrush}" FontSize="14" 
+                                   Visibility="{Binding IsDataLoaded, Converter={StaticResource InverseBoolToVisConverter}}"/>
                     </Grid>
                 </Border>
                 
-                <!-- Metrics Bar -->
-                <Border Grid.Row="1" BorderBrush="#DDD" BorderThickness="1" CornerRadius="4" Margin="0,8,0,0" Padding="16,12">
+                <!-- 指标栏 -->
+                <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="0,8,0,0" Padding="16,12">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -182,79 +253,92 @@
                         </Grid.ColumnDefinitions>
                         
                         <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-                            <TextBlock Text="{DynamicResource Balance}" Style="{StaticResource MetricLabel}"/>
+                            <TextBlock Text="账户余额" Style="{StaticResource MetricLabel}"/>
                             <TextBlock Text="{Binding CurrentStatus.Balance, StringFormat=C2}" Style="{StaticResource MetricValue}"/>
                         </StackPanel>
                         
                         <StackPanel Grid.Column="1" HorizontalAlignment="Center">
-                            <TextBlock Text="{DynamicResource Equity}" Style="{StaticResource MetricLabel}"/>
+                            <TextBlock Text="净值" Style="{StaticResource MetricLabel}"/>
                             <TextBlock Text="{Binding CurrentStatus.Equity, StringFormat=C2}" Style="{StaticResource MetricValue}"/>
                         </StackPanel>
                         
                         <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                            <TextBlock Text="{DynamicResource TotalReturn}" Style="{StaticResource MetricLabel}"/>
-                            <TextBlock Text="{Binding TotalReturnPct, StringFormat={}{0:F2}%}" Style="{StaticResource MetricValue}" Foreground="Green"/>
+                            <TextBlock Text="总收益" Style="{StaticResource MetricLabel}"/>
+                            <TextBlock Text="{Binding TotalReturnPct, StringFormat={}{0:F2}%}" Style="{StaticResource MetricValue}" Foreground="{DynamicResource SuccessBrush}"/>
                         </StackPanel>
                         
                         <StackPanel Grid.Column="3" HorizontalAlignment="Center">
-                            <TextBlock Text="{DynamicResource MaxDrawdown}" Style="{StaticResource MetricLabel}"/>
-                            <TextBlock Text="{Binding MaxDrawdown, StringFormat={}{0:F2}%}" Style="{StaticResource MetricValue}" Foreground="OrangeRed"/>
+                            <TextBlock Text="最大回撤" Style="{StaticResource MetricLabel}"/>
+                            <TextBlock Text="{Binding MaxDrawdown, StringFormat={}{0:F2}%}" Style="{StaticResource MetricValue}" Foreground="{DynamicResource WarningBrush}"/>
                         </StackPanel>
                         
                         <StackPanel Grid.Column="4" HorizontalAlignment="Center">
-                            <TextBlock Text="{DynamicResource Positions}" Style="{StaticResource MetricLabel}"/>
+                            <TextBlock Text="持仓数" Style="{StaticResource MetricLabel}"/>
                             <TextBlock Text="{Binding CurrentStatus.PositionCount}" Style="{StaticResource MetricValue}"/>
                         </StackPanel>
                     </Grid>
                 </Border>
             </Grid>
 
-            <!-- Right Panel - Log -->
-            <Border Grid.Column="2" BorderBrush="#DDD" BorderThickness="1" CornerRadius="4" Padding="8">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    
-                    <TextBlock Grid.Row="0" Text="{DynamicResource Log}" Style="{StaticResource HeaderText}" Margin="0,0,0,8"/>
-                    
-                    <ListView Grid.Row="1" ItemsSource="{Binding LogEntries}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" BorderThickness="0">
-                        <ListView.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Margin="0,2">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="70"/>
-                                        <ColumnDefinition Width="50"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    
-                                    <TextBlock Grid.Column="0" Text="{Binding FormattedTime}" FontSize="10" Foreground="Gray"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding LevelString}" FontSize="10" FontWeight="Bold"/>
-                                    <TextBlock Grid.Column="2" Text="{Binding Message}" TextWrapping="Wrap" FontSize="11"/>
-                                </Grid>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
-                    
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-                        <Button Content="{DynamicResource Clear}" Command="{Binding ClearLogCommand}" Padding="8,4" Margin="0,0,4,0"/>
-                        <Button Content="{DynamicResource Export}" Command="{Binding ExportLogCommand}" Padding="8,4"/>
-                    </StackPanel>
-                </Grid>
-            </Border>
+            <!-- 右侧面板 - 策略列表 + 日志 -->
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="200"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <!-- 策略列表面板 -->
+                <controls:StrategyListPanel x:Name="StrategyListPanel" Grid.Row="0" Margin="0,0,0,8"/>
+                
+                <!-- 日志面板 -->
+                <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <TextBlock Grid.Row="0" Text="日志" Style="{StaticResource HeaderText}" Margin="0,0,0,8"/>
+                        
+                        <ListView Grid.Row="1" ItemsSource="{Binding LogEntries}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" 
+                                  BorderThickness="0" Background="Transparent">
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="50"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <TextBlock Grid.Column="0" Text="{Binding FormattedTime}" FontSize="10" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding LevelString}" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding Message}" TextWrapping="Wrap" FontSize="11" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                        
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                            <Button Content="清空" Command="{Binding ClearLogCommand}" Style="{StaticResource ToolbarButton}" Padding="8,4" Margin="0,0,4,0"/>
+                            <Button Content="导出" Command="{Binding ExportLogCommand}" Style="{StaticResource ToolbarButton}" Padding="8,4"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
         </Grid>
         
-        <!-- Status Bar -->
-        <StatusBar Grid.Row="2">
-            <StatusBarItem>
-                <TextBlock Text="{Binding StatusMessage}"/>
-            </StatusBarItem>
-            <Separator/>
-            <StatusBarItem HorizontalAlignment="Right">
-                <TextBlock Text="AegisQuant v1.0"/>
-            </StatusBarItem>
-        </StatusBar>
+        <!-- 状态栏 -->
+        <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="8,4">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="AegisQuant v1.0" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
     </Grid>
 </Window>

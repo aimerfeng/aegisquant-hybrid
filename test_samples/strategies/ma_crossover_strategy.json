@@ -1,0 +1,33 @@
+﻿{
+  "name": "双均线交叉策略",
+  "description": "经典的双均线交叉策略，短期均线上穿长期均线买入，下穿卖出",
+  "version": "1.0",
+  "parameters": {
+    "short_period": {
+      "type": "int",
+      "default": 5,
+      "min": 2,
+      "max": 50,
+      "description": "短期均线周期"
+    },
+    "long_period": {
+      "type": "int",
+      "default": 20,
+      "min": 5,
+      "max": 200,
+      "description": "长期均线周期"
+    }
+  },
+  "indicators": [
+    { "name": "short_ma", "type": "SMA", "period": 5 },
+    { "name": "long_ma", "type": "SMA", "period": 20 }
+  ],
+  "rules": {
+    "buy": {
+      "condition": "short_ma > long_ma"
+    },
+    "sell": {
+      "condition": "short_ma < long_ma"
+    }
+  }
+}
