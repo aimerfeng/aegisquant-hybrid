@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using AegisQuant.Interop;
+using ScottPlot;
 
 namespace AegisQuant.UI.Strategy;
 
@@ -58,7 +59,7 @@ public class TickData
     /// <summary>
     /// Creates TickData from native Tick struct.
     /// </summary>
-    public static TickData FromNative(Tick tick)
+    public static TickData FromNative(AegisQuant.Interop.Tick tick)
     {
         return new TickData
         {
@@ -74,11 +75,28 @@ public class TickData
     }
 
     /// <summary>
+    /// Creates TickData from OHLC bar.
+    /// </summary>
+    public static TickData FromOhlc(OHLC ohlc, double volume = 0)
+    {
+        return new TickData
+        {
+            Timestamp = new DateTimeOffset(ohlc.DateTime).ToUnixTimeMilliseconds(),
+            Price = ohlc.Close,
+            Volume = volume,
+            Open = ohlc.Open,
+            High = ohlc.High,
+            Low = ohlc.Low,
+            Close = ohlc.Close
+        };
+    }
+
+    /// <summary>
     /// Converts to native Tick struct.
     /// </summary>
-    public Tick ToNative()
+    public AegisQuant.Interop.Tick ToNative()
     {
-        return new Tick
+        return new AegisQuant.Interop.Tick
         {
             Timestamp = Timestamp,
             Price = Price,
@@ -93,6 +111,7 @@ public class TickData
 public class StrategyContext
 {
     private readonly List<TickData> _priceHistory;
+    private readonly List<OHLC> _ohlcHistory;
     private readonly IndicatorService _indicators;
 
     /// <summary>
@@ -101,6 +120,7 @@ public class StrategyContext
     public StrategyContext()
     {
         _priceHistory = new List<TickData>();
+        _ohlcHistory = new List<OHLC>();
         _indicators = new IndicatorService(_priceHistory);
         Position = new PositionInfo();
         Account = new AccountStatus();
@@ -112,9 +132,19 @@ public class StrategyContext
     public TickData CurrentTick { get; private set; } = new();
 
     /// <summary>
+    /// Gets the current OHLC bar (if available).
+    /// </summary>
+    public OHLC? CurrentBar => _ohlcHistory.Count > 0 ? _ohlcHistory[^1] : null;
+
+    /// <summary>
     /// Gets the price history (read-only).
     /// </summary>
     public IReadOnlyList<TickData> PriceHistory => _priceHistory;
+
+    /// <summary>
+    /// Gets the OHLC history (read-only).
+    /// </summary>
+    public IReadOnlyList<OHLC> OhlcHistory => _ohlcHistory;
 
     /// <summary>
     /// Gets the indicator service for calculating technical indicators.
@@ -152,6 +182,31 @@ public class StrategyContext
     public int TickCount => _priceHistory.Count;
 
     /// <summary>
+    /// Number of OHLC bars in history.
+    /// </summary>
+    public int BarCount => _ohlcHistory.Count;
+
+    /// <summary>
+    /// Gets closing prices as array (for indicator calculations).
+    /// </summary>
+    public double[] Closes => _ohlcHistory.Select(o => o.Close).ToArray();
+
+    /// <summary>
+    /// Gets high prices as array.
+    /// </summary>
+    public double[] Highs => _ohlcHistory.Select(o => o.High).ToArray();
+
+    /// <summary>
+    /// Gets low prices as array.
+    /// </summary>
+    public double[] Lows => _ohlcHistory.Select(o => o.Low).ToArray();
+
+    /// <summary>
+    /// Gets open prices as array.
+    /// </summary>
+    public double[] Opens => _ohlcHistory.Select(o => o.Open).ToArray();
+
+    /// <summary>
     /// Updates the context with a new tick (from TickData).
     /// </summary>
     /// <param name="tick">New tick data</param>
@@ -166,9 +221,17 @@ public class StrategyContext
     /// Updates the context with a new native Tick.
     /// </summary>
     /// <param name="tick">Native tick from engine</param>
-    public void UpdateTick(Tick tick)
+    public void UpdateTick(AegisQuant.Interop.Tick tick)
     {
         UpdateTick(TickData.FromNative(tick));
+    }
+
+    /// <summary>
+    /// Adds an OHLC bar to history.
+    /// </summary>
+    public void AddOhlc(OHLC ohlc)
+    {
+        _ohlcHistory.Add(ohlc);
     }
 
     /// <summary>
@@ -199,6 +262,7 @@ public class StrategyContext
     public void Reset()
     {
         _priceHistory.Clear();
+        _ohlcHistory.Clear();
         _indicators.InvalidateCache();
         CurrentTick = new TickData();
         Position = new PositionInfo();

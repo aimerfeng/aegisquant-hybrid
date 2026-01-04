@@ -282,7 +282,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 var filePath = dialog.FileName;
                 var extension = System.IO.Path.GetExtension(filePath).ToLowerInvariant();
 
-                // 如果是 Excel 文件，先转换为 CSV
+                // 如果是 Excel 文件，先转换
                 if (extension == ".xlsx" || extension == ".xls")
                 {
                     AddLog(LogLevel.Info, $"正在导入 Excel 文件: {System.IO.Path.GetFileName(filePath)}");
@@ -295,6 +295,34 @@ public partial class MainViewModel : ObservableObject, IDisposable
                     }
 
                     AddLog(LogLevel.Info, $"Excel 导入成功: {importResult.RowCount} 行数据，格式: {importResult.DetectedFormat}");
+
+                    // 如果是 OHLC 格式，直接使用解析的数据
+                    if (importResult.FormatType == Services.ExcelDataImportService.DataFormatType.OHLC 
+                        && importResult.OhlcData != null)
+                    {
+                        DataFilePath = dialog.FileName;
+                        OhlcData = importResult.OhlcData;
+                        VolumeData = importResult.VolumeData;
+                        IsDataLoaded = true;
+
+                        // 创建模拟的数据质量报告
+                        DataQualityReport = new DataQualityReport
+                        {
+                            TotalTicks = importResult.RowCount,
+                            ValidTicks = importResult.RowCount,
+                            InvalidTicks = 0,
+                            AnomalyTicks = 0,
+                            FirstTimestamp = new DateTimeOffset(importResult.OhlcData.First().DateTime).ToUnixTimeMilliseconds(),
+                            LastTimestamp = new DateTimeOffset(importResult.OhlcData.Last().DateTime).ToUnixTimeMilliseconds()
+                        };
+
+                        // 触发 OHLC 数据加载事件
+                        OnOhlcDataLoaded?.Invoke(this, new OhlcDataLoadedEventArgs(importResult.OhlcData, importResult.VolumeData!));
+
+                        StatusMessage = $"已加载 {importResult.RowCount} 条 K 线数据 - {System.IO.Path.GetFileName(dialog.FileName)}";
+                        return;
+                    }
+
                     filePath = importResult.CsvFilePath!;
                 }
 

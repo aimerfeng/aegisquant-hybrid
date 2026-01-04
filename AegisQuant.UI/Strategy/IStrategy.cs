@@ -11,10 +11,14 @@ public enum Signal
 {
     /// <summary>No action</summary>
     None = 0,
-    /// <summary>Buy signal</summary>
+    /// <summary>Buy signal (open long)</summary>
     Buy = 1,
-    /// <summary>Sell signal</summary>
-    Sell = -1
+    /// <summary>Sell signal (open short)</summary>
+    Sell = -1,
+    /// <summary>Close long position</summary>
+    CloseLong = 2,
+    /// <summary>Close short position</summary>
+    CloseShort = -2
 }
 
 /// <summary>
@@ -62,6 +66,14 @@ public interface IStrategy : IDisposable
     /// <param name="context">Strategy execution context</param>
     /// <returns>Trading signal (Buy, Sell, or None)</returns>
     Signal OnTick(StrategyContext context);
+
+    /// <summary>
+    /// Process an OHLC bar and generate a trading signal.
+    /// Default implementation calls OnTick with close price.
+    /// </summary>
+    /// <param name="context">Strategy execution context</param>
+    /// <returns>Trading signal</returns>
+    Signal OnBar(StrategyContext context) => OnTick(context);
 
     /// <summary>
     /// Reset the strategy state.
