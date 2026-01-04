@@ -652,6 +652,52 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
+    /// Called when data is loaded from ImportWizardWindow or other sources.
+    /// This is the central hub for data loading - ensures all components are updated.
+    /// </summary>
+    /// <param name="ohlcData">OHLC data</param>
+    /// <param name="volumes">Volume data</param>
+    /// <param name="filePath">Source file path</param>
+    public void OnDataLoaded(List<OHLC> ohlcData, List<double>? volumes, string filePath)
+    {
+        // 确保在 UI 线程上执行
+        if (Application.Current?.Dispatcher.CheckAccess() == false)
+        {
+            Application.Current.Dispatcher.BeginInvoke(() => OnDataLoadedInternal(ohlcData, volumes, filePath));
+        }
+        else
+        {
+            OnDataLoadedInternal(ohlcData, volumes, filePath);
+        }
+    }
+    
+    private void OnDataLoadedInternal(List<OHLC> ohlcData, List<double>? volumes, string filePath)
+    {
+        // 更新 ViewModel 状态
+        OhlcData = ohlcData;
+        VolumeData = volumes ?? new List<double>(new double[ohlcData.Count]);
+        DataFilePath = filePath;
+        IsDataLoaded = true;
+        
+        // 同步数据到 BacktestService
+        _backtestService.SetOhlcData(ohlcData, VolumeData);
+        
+        // 初始化回放服务
+        InitializeReplay();
+        
+        // 触发 OHLC 数据加载事件（通知图表更新）
+        OnOhlcDataLoaded?.Invoke(this, new OhlcDataLoadedEventArgs(ohlcData, VolumeData));
+        
+        // 更新状态消息
+        StatusMessage = $"已加载 {ohlcData.Count} 条 K 线数据 - {System.IO.Path.GetFileName(filePath)}";
+        AddLog(LogLevel.Info, $"数据加载完成: {ohlcData.Count} 条 K 线");
+        
+        // 更新命令状态
+        StartBacktestCommand.NotifyCanExecuteChanged();
+        LoadDataCommand.NotifyCanExecuteChanged();
+    }
+
+    /// <summary>
     /// Sets the strategy for replay.
     /// </summary>
     public void SetReplayStrategy(IStrategy strategy)
@@ -796,8 +842,22 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     /// <summary>
     /// Adds a log entry to the log panel.
+    /// Thread-safe: automatically marshals to UI thread if needed.
     /// </summary>
     public void AddLog(LogLevel level, string message)
+    {
+        // 确保在 UI 线程上执行
+        if (Application.Current?.Dispatcher.CheckAccess() == false)
+        {
+            Application.Current.Dispatcher.BeginInvoke(() => AddLogInternal(level, message));
+        }
+        else
+        {
+            AddLogInternal(level, message);
+        }
+    }
+    
+    private void AddLogInternal(LogLevel level, string message)
     {
         // Filter by selected log level
         if (level >= SelectedLogLevel)

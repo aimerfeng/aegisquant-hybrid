@@ -518,6 +518,7 @@ public partial class MainWindow : Window
 
     /// <summary>
     /// Opens the Import Wizard window for data import with column mapping and cleaning.
+    /// 修复：确保数据正确传递到 MainViewModel 和 BacktestService
     /// </summary>
     private async void ImportWizardButton_Click(object sender, RoutedEventArgs e)
     {
@@ -546,23 +547,8 @@ public partial class MainWindow : Window
                     {
                         if (result.FormatType == ExcelDataImportService.DataFormatType.OHLC && result.OhlcData != null)
                         {
-                            // OHLC 数据直接加载到图表
-                            if (_viewModel != null)
-                            {
-                                _viewModel.OhlcData = result.OhlcData;
-                                _viewModel.VolumeData = result.VolumeData;
-                                _viewModel.IsDataLoaded = true;
-                                _viewModel.DataFilePath = config.FilePath;
-                                _viewModel.StatusMessage = $"已导入 {result.RowCount} 条 K 线数据";
-                                _viewModel.InitializeReplay();
-                                
-                                // 更新图表
-                                MainChartControlElement?.UpdateOhlcData(result.OhlcData);
-                                if (result.VolumeData != null)
-                                {
-                                    MainChartControlElement?.UpdateVolumeData(result.VolumeData);
-                                }
-                            }
+                            // 使用 MainViewModel.OnDataLoaded 作为数据流的中心枢纽
+                            _viewModel?.OnDataLoaded(result.OhlcData, result.VolumeData, config.FilePath);
                             _viewModel?.AddLog(Interop.LogLevel.Info, $"成功导入 {result.RowCount} 条 OHLC 数据");
                         }
                         else if (!string.IsNullOrEmpty(result.CsvFilePath))

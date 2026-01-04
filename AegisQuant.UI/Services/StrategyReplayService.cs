@@ -1,3 +1,4 @@
+using System.Windows.Threading;
 using ScottPlot;
 using AegisQuant.UI.Strategy;
 using AegisQuant.UI.Models;
@@ -65,6 +66,9 @@ public class StrategyReplayService
     private int _currentIndex = 0;
     private bool _isPlaying = false;
     private CancellationTokenSource? _playbackCts;
+    
+    // DispatcherTimer for UI-thread-safe playback
+    private DispatcherTimer? _playbackTimer;
     
     // Track the last synced engine index for state consistency (Requirements: 4.11)
     private int _lastSyncedEngineIndex = -1;
@@ -501,7 +505,7 @@ public class StrategyReplayService
     }
 
     /// <summary>
-    /// 开始自动播放
+    /// 开始自动播放 - 使用 DispatcherTimer 确保 UI 线程安全
     /// </summary>
     public async Task PlayAsync()
     {
@@ -510,21 +514,51 @@ public class StrategyReplayService
         _isPlaying = true;
         _playbackCts = new CancellationTokenSource();
 
+        // 使用 DispatcherTimer 在 UI 线程上执行回放
+        _playbackTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(PlaybackSpeed)
+        };
+        
+        _playbackTimer.Tick += (s, e) =>
+        {
+            if (_currentIndex >= _ohlcData.Count || _playbackCts?.Token.IsCancellationRequested == true)
+            {
+                StopPlaybackTimer();
+                return;
+            }
+            
+            StepForward();
+        };
+        
+        _playbackTimer.Start();
+        
+        // 等待播放完成或取消
         try
         {
-            while (_currentIndex < _ohlcData.Count && !_playbackCts.Token.IsCancellationRequested)
+            while (_isPlaying && !_playbackCts.Token.IsCancellationRequested)
             {
-                StepForward();
-                await Task.Delay(PlaybackSpeed, _playbackCts.Token);
+                await Task.Delay(100, _playbackCts.Token);
             }
         }
         catch (OperationCanceledException)
         {
             // 正常取消
         }
-        finally
+    }
+    
+    /// <summary>
+    /// 停止播放定时器
+    /// </summary>
+    private void StopPlaybackTimer()
+    {
+        _playbackTimer?.Stop();
+        _playbackTimer = null;
+        _isPlaying = false;
+        
+        if (_currentIndex >= _ohlcData.Count)
         {
-            _isPlaying = false;
+            OnReplayCompleted?.Invoke(this, _state);
         }
     }
 
@@ -534,7 +568,7 @@ public class StrategyReplayService
     public void Pause()
     {
         _playbackCts?.Cancel();
-        _isPlaying = false;
+        StopPlaybackTimer();
     }
 
     /// <summary>
