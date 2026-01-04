@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AegisQuant.UI.Strategy;
 using AegisQuant.UI.Strategy.Loaders;
 using AegisQuant.UI.Strategy.Models;
+using AegisQuant.UI.Services.Interfaces;
 using Python.Runtime;
 
 namespace AegisQuant.UI.Services;
@@ -45,7 +46,7 @@ public class StrategyErrorEventArgs : EventArgs
 /// <summary>
 /// Service for managing trading strategies.
 /// </summary>
-public class StrategyManagerService : IDisposable
+public class StrategyManagerService : IStrategyManagerService
 {
     private IStrategy? _currentStrategy;
     private readonly List<StrategyInfo> _recentStrategies;
@@ -71,6 +72,11 @@ public class StrategyManagerService : IDisposable
     /// Gets the list of recently used strategies.
     /// </summary>
     public IReadOnlyList<StrategyInfo> RecentStrategies => _recentStrategies;
+
+    /// <summary>
+    /// Gets whether an external strategy is currently loaded.
+    /// </summary>
+    public bool HasExternalStrategy => _currentStrategy != null;
 
     /// <summary>
     /// Event raised when a strategy is loaded.

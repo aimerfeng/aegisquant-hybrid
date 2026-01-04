@@ -1,0 +1,118 @@
+<UserControl x:Class="AegisQuant.UI.Controls.StatusPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:controls="clr-namespace:AegisQuant.UI.Controls"
+             mc:Ignorable="d" 
+             d:DesignHeight="120" d:DesignWidth="300"
+             Background="{DynamicResource SurfaceBrush}">
+    
+    <UserControl.Resources>
+        <Style x:Key="StatusLabelStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+            <Setter Property="Margin" Value="0,0,0,2"/>
+        </Style>
+        
+        <Style x:Key="StatusValueStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+        </Style>
+        
+        <Style x:Key="PositiveValueStyle" TargetType="TextBlock" BasedOn="{StaticResource StatusValueStyle}">
+            <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
+        </Style>
+        
+        <Style x:Key="NegativeValueStyle" TargetType="TextBlock" BasedOn="{StaticResource StatusValueStyle}">
+            <Setter Property="Foreground" Value="{DynamicResource ErrorBrush}"/>
+        </Style>
+    </UserControl.Resources>
+    
+    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="12">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            
+            <!-- Header -->
+            <TextBlock Grid.Row="0" 
+                       Text="{DynamicResource String.Status.Title}" 
+                       FontWeight="Bold" 
+                       FontSize="14"
+                       Foreground="{DynamicResource PrimaryTextBrush}"
+                       Margin="0,0,0,12"/>
+            
+            <!-- Status Grid -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
+                <!-- Equity -->
+                <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,8,12">
+                    <TextBlock Text="{DynamicResource String.Status.Equity}" Style="{StaticResource StatusLabelStyle}"/>
+                    <controls:FlashingTextBlock x:Name="EquityText" 
+                                                Text="$100,000.00" 
+                                                Style="{StaticResource StatusValueStyle}"/>
+                </StackPanel>
+                
+                <!-- Position -->
+                <StackPanel Grid.Row="0" Grid.Column="1" Margin="8,0,0,12">
+                    <TextBlock Text="{DynamicResource String.Status.Position}" Style="{StaticResource StatusLabelStyle}"/>
+                    <TextBlock x:Name="PositionText" Text="0" Style="{StaticResource StatusValueStyle}"/>
+                </StackPanel>
+                
+                <!-- Unrealized P&L -->
+                <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,8,12">
+                    <TextBlock Text="{DynamicResource String.Status.UnrealizedPnL}" Style="{StaticResource StatusLabelStyle}"/>
+                    <controls:FlashingTextBlock x:Name="UnrealizedPnLText" 
+                                                Text="$0.00" 
+                                                Style="{StaticResource StatusValueStyle}"/>
+                </StackPanel>
+                
+                <!-- Realized P&L -->
+                <StackPanel Grid.Row="1" Grid.Column="1" Margin="8,0,0,12">
+                    <TextBlock Text="{DynamicResource String.Status.RealizedPnL}" Style="{StaticResource StatusLabelStyle}"/>
+                    <controls:FlashingTextBlock x:Name="RealizedPnLText" 
+                                                Text="$0.00" 
+                                                Style="{StaticResource StatusValueStyle}"/>
+                </StackPanel>
+                
+                <!-- Current Time -->
+                <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,0,8,12">
+                    <TextBlock Text="{DynamicResource String.Status.CurrentTime}" Style="{StaticResource StatusLabelStyle}"/>
+                    <TextBlock x:Name="CurrentTimeText" 
+                               Text="--:--:--" 
+                               Style="{StaticResource StatusValueStyle}"
+                               FontFamily="Consolas"
+                               FontSize="13"/>
+                </StackPanel>
+                
+                <!-- Current Signal -->
+                <StackPanel Grid.Row="2" Grid.Column="1" Margin="8,0,0,12">
+                    <TextBlock Text="{DynamicResource String.Status.CurrentSignal}" Style="{StaticResource StatusLabelStyle}"/>
+                    <Border x:Name="SignalBorder" 
+                            Background="Transparent" 
+                            CornerRadius="4" 
+                            Padding="8,4"
+                            HorizontalAlignment="Left">
+                        <TextBlock x:Name="SignalText" 
+                                   Text="{DynamicResource String.Replay.NoSignal}" 
+                                   FontWeight="Bold"
+                                   FontSize="14"/>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

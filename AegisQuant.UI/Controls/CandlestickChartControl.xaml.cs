@@ -5,6 +5,8 @@ using ScottPlot;
 using ScottPlot.Plottables;
 using AegisQuant.UI.Services;
 using AegisQuant.UI.ViewModels;
+using AegisQuant.UI.Models;
+using AegisQuant.UI.Strategy;
 
 namespace AegisQuant.UI.Controls;
 
@@ -37,6 +39,34 @@ public partial class CandlestickChartControl : UserControl
 
     // 当前周期(分钟)
     private int _currentPeriodMinutes = 1;
+
+    #region Incremental Update Support (Replay Mode)
+
+    // Reusable plottables for incremental updates (never recreated during replay)
+    private CandlestickPlot? _candlePlot;
+    private ScottPlot.Plottables.Signal? _ma5Plot;
+    private ScottPlot.Plottables.Signal? _ma10Plot;
+    private ScottPlot.Plottables.Signal? _ma20Plot;
+    private ScottPlot.Plottables.Signal? _ma60Plot;
+    private ScottPlot.Plottables.Signal? _bollUpperPlot;
+    private ScottPlot.Plottables.Signal? _bollMiddlePlot;
+    private ScottPlot.Plottables.Signal? _bollLowerPlot;
+
+    // Display data for incremental updates (updated in place)
+    private List<OHLC> _displayData = new();
+    private double[] _ma5DisplayData = Array.Empty<double>();
+    private double[] _ma10DisplayData = Array.Empty<double>();
+    private double[] _ma20DisplayData = Array.Empty<double>();
+    private double[] _ma60DisplayData = Array.Empty<double>();
+
+    // Trade markers for replay mode (persisted until reset)
+    private readonly List<Marker> _replayTradeMarkers = new();
+    private readonly TradeMarkerManager _tradeMarkerManager = new();
+
+    // Flag to indicate if plottables are initialized for incremental mode
+    private bool _incrementalModeInitialized = false;
+
+    #endregion
 
     public CandlestickChartControl()
     {
@@ -461,12 +491,21 @@ public partial class CandlestickChartControl : UserControl
 
         if (showMarkers)
         {
+            // Get colors from ColorSchemeService for consistency
+            var colorService = ColorSchemeService.Instance;
+            var buyColor = colorService.UpColor;   // Red in China scheme (buy = up)
+            var sellColor = colorService.DownColor; // Green in China scheme (sell = down)
+            
+            // Convert WPF colors to ScottPlot colors
+            var scottBuyColor = new ScottPlot.Color(buyColor.R, buyColor.G, buyColor.B, buyColor.A);
+            var scottSellColor = new ScottPlot.Color(sellColor.R, sellColor.G, sellColor.B, sellColor.A);
+            
             foreach (var (index, price, isBuy) in _tradeMarkers)
             {
                 var marker = MainChart.Plot.Add.Marker(index, price);
                 marker.Shape = isBuy ? MarkerShape.TriUp : MarkerShape.TriDown;
                 marker.Size = 12;
-                marker.Color = isBuy ? ScottPlot.Color.FromHex("#ef5350") : ScottPlot.Color.FromHex("#26a69a");
+                marker.Color = isBuy ? scottBuyColor : scottSellColor;
             }
         }
 
@@ -559,11 +598,87 @@ public partial class CandlestickChartControl : UserControl
         RenderMainChart();
     }
 
+    /// <summary>
+    /// Add a trade marker using Signal enum (for replay mode).
+    /// Supports color-coded buy/sell markers per Requirements 6.1, 6.2, 6.3.
+    /// Buy signals display upward arrow markers in UpColor (red in China scheme).
+    /// Sell signals display downward arrow markers in DownColor (green in China scheme).
+    /// </summary>
+    /// <param name="barIndex">The bar index where the signal occurred</param>
+    /// <param name="signal">The trading signal (Buy or Sell)</param>
+    /// <param name="price">The price at which the signal was generated</param>
+    public void AddTradeMarker(int barIndex, Strategy.Signal signal, double price)
+    {
+        if (signal == Strategy.Signal.None) return;
+
+        bool isBuy = signal == Strategy.Signal.Buy || signal == Strategy.Signal.CloseLong;
+        
+        // Add to internal tracking
+        _tradeMarkers.Add((barIndex, price, isBuy));
+        
+        // Add to TradeMarkerManager for persistence tracking
+        if (isBuy)
+            _tradeMarkerManager.AddBuy(barIndex, price, 0, DateTime.Now);
+        else
+            _tradeMarkerManager.AddSell(barIndex, price, 0, DateTime.Now);
+
+        // Get colors from ColorSchemeService for consistency
+        var colorService = ColorSchemeService.Instance;
+        var buyColor = colorService.UpColor;   // Red in China scheme (buy = up)
+        var sellColor = colorService.DownColor; // Green in China scheme (sell = down)
+        
+        // Convert WPF colors to ScottPlot colors
+        var scottBuyColor = new ScottPlot.Color(buyColor.R, buyColor.G, buyColor.B, buyColor.A);
+        var scottSellColor = new ScottPlot.Color(sellColor.R, sellColor.G, sellColor.B, sellColor.A);
+
+        // If in incremental mode, add marker directly without full redraw
+        if (_incrementalModeInitialized)
+        {
+            var marker = MainChart.Plot.Add.Marker(barIndex, price);
+            marker.Shape = isBuy ? MarkerShape.TriUp : MarkerShape.TriDown;
+            marker.Size = 12;
+            marker.Color = isBuy ? scottBuyColor : scottSellColor;
+            _replayTradeMarkers.Add(marker);
+            MainChart.Refresh();
+        }
+        else
+        {
+            RenderMainChart();
+        }
+    }
+
+    /// <summary>
+    /// Add a trade marker from TradeMarker model.
+    /// </summary>
+    public void AddTradeMarker(TradeMarker marker)
+    {
+        AddTradeMarker(marker.BarIndex, marker.IsBuy ? Strategy.Signal.Buy : Strategy.Signal.Sell, marker.Price);
+    }
+
     public void ClearTradeMarkers()
     {
         _tradeMarkers.Clear();
+        _tradeMarkerManager.Clear();
+        
+        // Clear replay markers from plot
+        foreach (var marker in _replayTradeMarkers)
+        {
+            MainChart.Plot.Remove(marker);
+        }
+        _replayTradeMarkers.Clear();
+        
         RenderMainChart();
     }
+
+    /// <summary>
+    /// Get all trade markers (for persistence/export).
+    /// </summary>
+    public IReadOnlyList<TradeMarker> GetTradeMarkers() => _tradeMarkerManager.Markers;
+
+    /// <summary>
+    /// Get the trade marker manager for external access.
+    /// </summary>
+    public TradeMarkerManager TradeMarkerManager => _tradeMarkerManager;
 
     public void Clear()
     {
@@ -575,12 +690,388 @@ public partial class CandlestickChartControl : UserControl
         _bollUpper.Clear(); _bollMiddle.Clear(); _bollLower.Clear();
         _macdDif.Clear(); _macdDea.Clear(); _macdHistogram.Clear();
         _tradeMarkers.Clear();
+        _tradeMarkerManager.Clear();
+        
+        // Clear incremental mode data
+        _displayData.Clear();
+        _replayTradeMarkers.Clear();
+        _incrementalModeInitialized = false;
+        _candlePlot = null;
+        _ma5Plot = null;
+        _ma10Plot = null;
+        _ma20Plot = null;
+        _ma60Plot = null;
+        _bollUpperPlot = null;
+        _bollMiddlePlot = null;
+        _bollLowerPlot = null;
         
         MainChart.Plot.Clear();
         VolumeChart.Plot.Clear();
         MacdChart.Plot.Clear();
         RefreshAllCharts();
     }
+
+    #region Incremental Update Methods (Replay Mode)
+
+    /// <summary>
+    /// Initialize reusable plottable objects for incremental updates.
+    /// Call this once before starting replay mode.
+    /// This avoids recreating plottables during replay, improving performance.
+    /// Requirements: 9.7, 9.8 - Reuse Plottable objects and avoid Plot.Clear()
+    /// </summary>
+    public void InitializePlottables()
+    {
+        MainChart.Plot.Clear();
+        VolumeChart.Plot.Clear();
+        MacdChart.Plot.Clear();
+        
+        _displayData.Clear();
+        _replayTradeMarkers.Clear();
+        _tradeMarkers.Clear();
+        _tradeMarkerManager.Clear();
+        
+        // Initialize with empty data - plottables will be updated incrementally
+        // Note: ScottPlot requires at least one data point, so we'll add plottables on first AppendBar
+        _incrementalModeInitialized = true;
+        
+        // Add crosshairs
+        _mainCrosshair = MainChart.Plot.Add.Crosshair(0, 0);
+        _mainCrosshair.IsVisible = false;
+        _mainCrosshair.LineColor = ScottPlot.Color.FromHex("#666666");
+        
+        _volumeCrosshair = VolumeChart.Plot.Add.Crosshair(0, 0);
+        _volumeCrosshair.IsVisible = false;
+        _volumeCrosshair.LineColor = ScottPlot.Color.FromHex("#666666");
+        
+        _macdCrosshair = MacdChart.Plot.Add.Crosshair(0, 0);
+        _macdCrosshair.IsVisible = false;
+        _macdCrosshair.LineColor = ScottPlot.Color.FromHex("#666666");
+        
+        RefreshAllCharts();
+    }
+
+    /// <summary>
+    /// Append a single bar during replay (incremental update).
+    /// This method adds one bar without redrawing the entire chart.
+    /// Requirements: 9.1, 9.2 - Append bar instead of redrawing all data
+    /// </summary>
+    /// <param name="bar">The OHLC bar to append</param>
+    public void AppendBar(OHLC bar)
+    {
+        if (!_incrementalModeInitialized)
+        {
+            InitializePlottables();
+        }
+        
+        _displayData.Add(bar);
+        _ohlcData.Add(bar);
+        _dateTimes.Add(bar.DateTime);
+        
+        // Update moving averages incrementally
+        UpdateMovingAveragesIncremental();
+        
+        // Update or create candlestick plot
+        if (_candlePlot == null)
+        {
+            _candlePlot = MainChart.Plot.Add.Candlestick(_displayData);
+        }
+        // Note: ScottPlot's Candlestick plot automatically reflects changes to the underlying list
+        
+        // Auto-scroll to show latest bar
+        int count = _displayData.Count;
+        int visibleCount = Math.Min(count, _visibleBars);
+        int startIndex = Math.Max(0, count - visibleCount);
+        
+        MainChart.Plot.Axes.SetLimitsX(startIndex - 0.5, count + 0.5);
+        
+        // Auto-scale Y axis for visible range
+        if (count > 0)
+        {
+            var visibleBars = _displayData.Skip(startIndex).Take(visibleCount).ToList();
+            if (visibleBars.Count > 0)
+            {
+                double minPrice = visibleBars.Min(o => o.Low);
+                double maxPrice = visibleBars.Max(o => o.High);
+                double padding = (maxPrice - minPrice) * 0.1;
+                if (padding < 0.01) padding = maxPrice * 0.01; // Minimum padding
+                MainChart.Plot.Axes.SetLimitsY(minPrice - padding, maxPrice + padding);
+            }
+        }
+        
+        MainChart.Refresh();
+        
+        // Update view indices for navigation
+        _viewEndIndex = count - 1;
+        _viewStartIndex = startIndex;
+    }
+
+    /// <summary>
+    /// Append a bar with volume data.
+    /// </summary>
+    public void AppendBar(OHLC bar, double volume)
+    {
+        AppendBar(bar);
+        _volumes.Add(volume);
+        
+        // Update volume chart
+        RenderVolumeChart();
+    }
+
+    /// <summary>
+    /// Batch update for seek operations.
+    /// Sets the visible range to the specified bars without full redraw.
+    /// Requirements: 9.6 - Batch-update visible bars only when seeking
+    /// </summary>
+    /// <param name="bars">The bars to display</param>
+    public void SetVisibleRange(List<OHLC> bars)
+    {
+        if (!_incrementalModeInitialized)
+        {
+            InitializePlottables();
+        }
+        
+        _displayData.Clear();
+        _displayData.AddRange(bars);
+        
+        // Also update the main OHLC data
+        _ohlcData.Clear();
+        _ohlcData.AddRange(bars);
+        _dateTimes = bars.Select(b => b.DateTime).ToList();
+        
+        // Recalculate indicators for the new range
+        CalculateIndicators();
+        
+        // Update or create candlestick plot
+        if (_candlePlot == null && _displayData.Count > 0)
+        {
+            _candlePlot = MainChart.Plot.Add.Candlestick(_displayData);
+        }
+        
+        // Set axis limits
+        int count = _displayData.Count;
+        MainChart.Plot.Axes.SetLimitsX(-0.5, count + 0.5);
+        
+        if (count > 0)
+        {
+            double minPrice = _displayData.Min(o => o.Low);
+            double maxPrice = _displayData.Max(o => o.High);
+            double padding = (maxPrice - minPrice) * 0.1;
+            if (padding < 0.01) padding = maxPrice * 0.01;
+            MainChart.Plot.Axes.SetLimitsY(minPrice - padding, maxPrice + padding);
+        }
+        
+        // Re-render indicators
+        RenderMainChartIndicatorsOnly();
+        
+        MainChart.Refresh();
+        
+        // Update view indices
+        _viewStartIndex = 0;
+        _viewEndIndex = count - 1;
+    }
+
+    /// <summary>
+    /// Set visible range with volume data.
+    /// </summary>
+    public void SetVisibleRange(List<OHLC> bars, List<double> volumes)
+    {
+        SetVisibleRange(bars);
+        _volumes.Clear();
+        _volumes.AddRange(volumes);
+        RenderVolumeChart();
+    }
+
+    /// <summary>
+    /// Update moving averages incrementally (only calculate for the new bar).
+    /// </summary>
+    private void UpdateMovingAveragesIncremental()
+    {
+        if (_displayData.Count == 0) return;
+        
+        var closes = _displayData.Select(o => o.Close).ToList();
+        int idx = closes.Count - 1;
+        
+        // MA5
+        if (idx >= 4)
+        {
+            double sum = 0;
+            for (int j = 0; j < 5; j++) sum += closes[idx - j];
+            if (_ma5.Count <= idx) _ma5.Add(sum / 5);
+            else _ma5[idx] = sum / 5;
+        }
+        else if (_ma5.Count <= idx)
+        {
+            _ma5.Add(double.NaN);
+        }
+        
+        // MA10
+        if (idx >= 9)
+        {
+            double sum = 0;
+            for (int j = 0; j < 10; j++) sum += closes[idx - j];
+            if (_ma10.Count <= idx) _ma10.Add(sum / 10);
+            else _ma10[idx] = sum / 10;
+        }
+        else if (_ma10.Count <= idx)
+        {
+            _ma10.Add(double.NaN);
+        }
+        
+        // MA20
+        if (idx >= 19)
+        {
+            double sum = 0;
+            for (int j = 0; j < 20; j++) sum += closes[idx - j];
+            if (_ma20.Count <= idx) _ma20.Add(sum / 20);
+            else _ma20[idx] = sum / 20;
+        }
+        else if (_ma20.Count <= idx)
+        {
+            _ma20.Add(double.NaN);
+        }
+        
+        // MA60
+        if (idx >= 59)
+        {
+            double sum = 0;
+            for (int j = 0; j < 60; j++) sum += closes[idx - j];
+            if (_ma60.Count <= idx) _ma60.Add(sum / 60);
+            else _ma60[idx] = sum / 60;
+        }
+        else if (_ma60.Count <= idx)
+        {
+            _ma60.Add(double.NaN);
+        }
+    }
+
+    /// <summary>
+    /// Render only the indicator lines without clearing the chart.
+    /// Used during incremental updates to avoid full redraw.
+    /// </summary>
+    private void RenderMainChartIndicatorsOnly()
+    {
+        // Remove old indicator plots if they exist
+        if (_ma5Plot != null) MainChart.Plot.Remove(_ma5Plot);
+        if (_ma10Plot != null) MainChart.Plot.Remove(_ma10Plot);
+        if (_ma20Plot != null) MainChart.Plot.Remove(_ma20Plot);
+        if (_ma60Plot != null) MainChart.Plot.Remove(_ma60Plot);
+        if (_bollUpperPlot != null) MainChart.Plot.Remove(_bollUpperPlot);
+        if (_bollMiddlePlot != null) MainChart.Plot.Remove(_bollMiddlePlot);
+        if (_bollLowerPlot != null) MainChart.Plot.Remove(_bollLowerPlot);
+        
+        bool showMa5 = Ma5Check?.IsChecked == true;
+        bool showMa10 = Ma10Check?.IsChecked == true;
+        bool showMa20 = Ma20Check?.IsChecked == true;
+        bool showMa60 = Ma60Check?.IsChecked == true;
+        bool showBoll = BollCheck?.IsChecked == true;
+        
+        if (showMa5 && _ma5.Count > 0)
+        {
+            var clean = _ma5.Select(v => double.IsNaN(v) ? 0 : v).ToArray();
+            _ma5Plot = MainChart.Plot.Add.Signal(clean);
+            _ma5Plot.Color = ScottPlot.Color.FromHex("#FFD700");
+            _ma5Plot.LineWidth = 1.5f;
+        }
+        
+        if (showMa10 && _ma10.Count > 0)
+        {
+            var clean = _ma10.Select(v => double.IsNaN(v) ? 0 : v).ToArray();
+            _ma10Plot = MainChart.Plot.Add.Signal(clean);
+            _ma10Plot.Color = ScottPlot.Color.FromHex("#FF69B4");
+            _ma10Plot.LineWidth = 1.5f;
+        }
+        
+        if (showMa20 && _ma20.Count > 0)
+        {
+            var clean = _ma20.Select(v => double.IsNaN(v) ? 0 : v).ToArray();
+            _ma20Plot = MainChart.Plot.Add.Signal(clean);
+            _ma20Plot.Color = ScottPlot.Color.FromHex("#00CED1");
+            _ma20Plot.LineWidth = 1.5f;
+        }
+        
+        if (showMa60 && _ma60.Count > 0)
+        {
+            var clean = _ma60.Select(v => double.IsNaN(v) ? 0 : v).ToArray();
+            _ma60Plot = MainChart.Plot.Add.Signal(clean);
+            _ma60Plot.Color = ScottPlot.Color.FromHex("#9370DB");
+            _ma60Plot.LineWidth = 1.5f;
+        }
+        
+        if (showBoll && _bollUpper.Count > 0)
+        {
+            var upperClean = _bollUpper.Select(v => double.IsNaN(v) ? 0 : v).ToArray();
+            var middleClean = _bollMiddle.Select(v => double.IsNaN(v) ? 0 : v).ToArray();
+            var lowerClean = _bollLower.Select(v => double.IsNaN(v) ? 0 : v).ToArray();
+            
+            _bollUpperPlot = MainChart.Plot.Add.Signal(upperClean);
+            _bollUpperPlot.Color = ScottPlot.Color.FromHex("#4FC3F7");
+            _bollUpperPlot.LineWidth = 1.5f;
+            
+            _bollMiddlePlot = MainChart.Plot.Add.Signal(middleClean);
+            _bollMiddlePlot.Color = ScottPlot.Color.FromHex("#4FC3F7");
+            _bollMiddlePlot.LineWidth = 1.5f;
+            
+            _bollLowerPlot = MainChart.Plot.Add.Signal(lowerClean);
+            _bollLowerPlot.Color = ScottPlot.Color.FromHex("#4FC3F7");
+            _bollLowerPlot.LineWidth = 1.5f;
+        }
+    }
+
+    /// <summary>
+    /// Check if incremental mode is initialized.
+    /// </summary>
+    public bool IsIncrementalModeInitialized => _incrementalModeInitialized;
+
+    /// <summary>
+    /// Get the current display data count.
+    /// </summary>
+    public int DisplayDataCount => _displayData.Count;
+
+    /// <summary>
+    /// Reset incremental mode (call before starting a new replay).
+    /// Clears all data but preserves chart configuration.
+    /// </summary>
+    public void ResetIncrementalMode()
+    {
+        _displayData.Clear();
+        _ohlcData.Clear();
+        _volumes.Clear();
+        _dateTimes.Clear();
+        _ma5.Clear();
+        _ma10.Clear();
+        _ma20.Clear();
+        _ma60.Clear();
+        _bollUpper.Clear();
+        _bollMiddle.Clear();
+        _bollLower.Clear();
+        _macdDif.Clear();
+        _macdDea.Clear();
+        _macdHistogram.Clear();
+        
+        // Clear trade markers but keep them tracked for persistence
+        foreach (var marker in _replayTradeMarkers)
+        {
+            MainChart.Plot.Remove(marker);
+        }
+        _replayTradeMarkers.Clear();
+        _tradeMarkers.Clear();
+        _tradeMarkerManager.Clear();
+        
+        // Reset plottable references
+        _candlePlot = null;
+        _ma5Plot = null;
+        _ma10Plot = null;
+        _ma20Plot = null;
+        _ma60Plot = null;
+        _bollUpperPlot = null;
+        _bollMiddlePlot = null;
+        _bollLowerPlot = null;
+        
+        // Re-initialize
+        InitializePlottables();
+    }
+
+    #endregion
 
     #region 时间导航
 

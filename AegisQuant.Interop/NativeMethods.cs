@@ -28,6 +28,14 @@ public delegate void StringCallback(IntPtr message);
 public delegate void StringWithLenCallback(IntPtr message, int length);
 
 /// <summary>
+/// OHLC callback delegate for receiving OHLC data from Rust.
+/// </summary>
+/// <param name="bars">Pointer to array of OhlcBar structs</param>
+/// <param name="count">Number of bars in the array</param>
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void OhlcCallback(IntPtr bars, int count);
+
+/// <summary>
 /// P/Invoke declarations for the Rust aegisquant_core library.
 /// </summary>
 public static partial class NativeMethods
@@ -174,4 +182,118 @@ public static partial class NativeMethods
         OrderRequest* orders,
         int maxOrders,
         int* orderCount);
+
+    // ============================================================================
+    // Hybrid Backtest Mode FFI Functions (Requirements: 2.5, 2.6, 8.3, 13.5)
+    // ============================================================================
+
+    /// <summary>
+    /// Process a single tick and return execution events to caller-provided buffer.
+    /// This is the primary FFI function for hybrid backtest mode.
+    /// </summary>
+    /// <param name="engine">Valid engine pointer from InitEngine</param>
+    /// <param name="tick">Pointer to Tick data</param>
+    /// <param name="outEventsBuffer">Pre-allocated buffer for execution events</param>
+    /// <param name="bufferCapacity">Capacity of the events buffer</param>
+    /// <param name="outEventCount">Output: actual number of events written</param>
+    /// <returns>ERR_SUCCESS on success, error code on failure</returns>
+    /// <remarks>
+    /// Uses "Caller Allocates" pattern:
+    /// - C# allocates ExecutionEvent[] buffer
+    /// - Rust writes events into the buffer
+    /// - C# reads events and reuses buffer for next call
+    /// - NO cross-language memory allocation/deallocation
+    /// </remarks>
+    [LibraryImport(DllName, EntryPoint = "process_tick_with_result")]
+    public static unsafe partial int ProcessTickWithResult(
+        IntPtr engine,
+        Tick* tick,
+        ExecutionEvent* outEventsBuffer,
+        int bufferCapacity,
+        int* outEventCount);
+
+    /// <summary>
+    /// Place an order based on external strategy signal.
+    /// Allows C# to submit buy/sell orders from external strategies (Python/JSON)
+    /// to the Rust engine for execution.
+    /// </summary>
+    /// <param name="engine">Valid engine pointer from InitEngine</param>
+    /// <param name="signal">Order signal: SIGNAL_BUY=1, SIGNAL_SELL=2</param>
+    /// <param name="price">Current market price for execution</param>
+    /// <param name="quantity">Order quantity (if 0, uses params.position_size)</param>
+    /// <param name="result">Output: order result with fill details or rejection reason</param>
+    /// <returns>ERR_SUCCESS on success, error code on failure</returns>
+    [LibraryImport(DllName, EntryPoint = "place_order")]
+    public static unsafe partial int PlaceOrder(
+        IntPtr engine,
+        int signal,
+        double price,
+        double quantity,
+        OrderResult* result);
+
+    /// <summary>
+    /// Get OHLC data for a specified timeframe.
+    /// Aggregates tick data into OHLC bars and returns them via callback.
+    /// </summary>
+    /// <param name="engine">Valid engine pointer from InitEngine</param>
+    /// <param name="timeframe">Timeframe string (e.g., "1m", "5m", "15m", "1h", "1d")</param>
+    /// <param name="callback">Callback function to receive OHLC data</param>
+    /// <returns>ERR_SUCCESS on success, error code on failure</returns>
+    [LibraryImport(DllName, EntryPoint = "get_ohlc_data", StringMarshalling = StringMarshalling.Utf8)]
+    public static partial int GetOhlcData(
+        IntPtr engine,
+        string timeframe,
+        IntPtr callback);
+
+    /// <summary>
+    /// Load CSV file with custom column mapping.
+    /// Supports various column naming conventions and date formats.
+    /// </summary>
+    /// <param name="engine">Valid engine pointer from InitEngine</param>
+    /// <param name="filePath">Path to the CSV file</param>
+    /// <param name="mapping">Column mapping configuration</param>
+    /// <param name="report">Output: data quality report</param>
+    /// <returns>ERR_SUCCESS on success, error code on failure</returns>
+    [LibraryImport(DllName, EntryPoint = "load_csv_with_mapping", StringMarshalling = StringMarshalling.Utf8)]
+    public static unsafe partial int LoadCsvWithMapping(
+        IntPtr engine,
+        string filePath,
+        CsvMapping* mapping,
+        DataQualityReport* report);
+
+    /// <summary>
+    /// Fast-forward to a specific tick index without invoking callbacks.
+    /// Allows efficient seeking in replay mode.
+    /// </summary>
+    /// <param name="engine">Valid engine pointer from InitEngine</param>
+    /// <param name="targetIndex">The tick index to fast-forward to (0-based)</param>
+    /// <param name="outTimestamp">Output: timestamp at target index</param>
+    /// <returns>ERR_SUCCESS on success, error code on failure</returns>
+    [LibraryImport(DllName, EntryPoint = "fast_forward_to")]
+    public static unsafe partial int FastForwardTo(
+        IntPtr engine,
+        long targetIndex,
+        long* outTimestamp);
+
+    /// <summary>
+    /// Get the current tick index in the loaded data.
+    /// </summary>
+    /// <param name="engine">Valid engine pointer from InitEngine</param>
+    /// <param name="outIndex">Output: current tick index</param>
+    /// <returns>ERR_SUCCESS on success, error code on failure</returns>
+    [LibraryImport(DllName, EntryPoint = "get_current_tick_index")]
+    public static unsafe partial int GetCurrentTickIndex(
+        IntPtr engine,
+        long* outIndex);
+
+    /// <summary>
+    /// Get the total number of ticks loaded.
+    /// </summary>
+    /// <param name="engine">Valid engine pointer from InitEngine</param>
+    /// <param name="outCount">Output: total tick count</param>
+    /// <returns>ERR_SUCCESS on success, error code on failure</returns>
+    [LibraryImport(DllName, EntryPoint = "get_tick_count")]
+    public static unsafe partial int GetTickCount(
+        IntPtr engine,
+        long* outCount);
 }

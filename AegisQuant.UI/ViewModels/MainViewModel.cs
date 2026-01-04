@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using AegisQuant.Interop;
 using AegisQuant.UI.Models;
+using AegisQuant.UI.Services.Interfaces;
 using AegisQuant.UI.Strategy;
 using AegisQuant.UI.Strategy.Models;
 using ScottPlot;
@@ -29,7 +30,8 @@ public class LogEntry
 /// </summary>
 public partial class MainViewModel : ObservableObject, IDisposable
 {
-    private readonly BacktestService _backtestService;
+    private readonly IBacktestService _backtestService;
+    private readonly IReplayService? _replayService;
     private bool _disposed;
 
     #region Observable Properties
@@ -120,6 +122,52 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     #endregion
 
+    #region Replay Properties - Requirements: 4.2, 4.3, 4.4, 4.5
+
+    /// <summary>
+    /// Whether replay is currently playing.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isReplayPlaying;
+
+    /// <summary>
+    /// Current replay index.
+    /// </summary>
+    [ObservableProperty]
+    private int _replayCurrentIndex;
+
+    /// <summary>
+    /// Total number of bars for replay.
+    /// </summary>
+    [ObservableProperty]
+    private int _replayTotalBars;
+
+    /// <summary>
+    /// Current replay timestamp.
+    /// </summary>
+    [ObservableProperty]
+    private DateTime _replayCurrentTime;
+
+    /// <summary>
+    /// Current replay signal.
+    /// </summary>
+    [ObservableProperty]
+    private Strategy.Signal _replayCurrentSignal = Strategy.Signal.None;
+
+    /// <summary>
+    /// Replay state info for status panel.
+    /// </summary>
+    [ObservableProperty]
+    private ReplayStateInfo? _replayState;
+
+    /// <summary>
+    /// Playback speed in milliseconds per bar.
+    /// </summary>
+    [ObservableProperty]
+    private int _playbackSpeed = 500;
+
+    #endregion
+
     #region Strategy Parameters
 
     [ObservableProperty]
@@ -193,15 +241,24 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     #endregion
 
-    public MainViewModel()
+    public MainViewModel(IBacktestService backtestService, IReplayService? replayService = null)
     {
-        _backtestService = new BacktestService();
+        _backtestService = backtestService;
+        _replayService = replayService;
 
         // Subscribe to service events
         _backtestService.OnStatusUpdated += OnStatusUpdated;
         _backtestService.OnLogReceived += OnLogReceived;
         _backtestService.OnBacktestCompleted += OnBacktestCompleted;
         _backtestService.OnOhlcDataLoaded += OnOhlcDataLoadedHandler;
+
+        // Subscribe to replay service events if available
+        if (_replayService != null)
+        {
+            _replayService.OnReplayStep += OnReplayStep;
+            _replayService.OnReplayCompleted += OnReplayCompleted;
+            _replayService.OnTradeSignal += OnReplayTradeSignal;
+        }
 
         // Initialize available strategies
         InitializeStrategies();
@@ -443,6 +500,165 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    #endregion
+
+    #region Replay Commands - Requirements: 4.2, 4.3, 4.4, 4.5
+
+    /// <summary>
+    /// Command to start replay playback.
+    /// Requirements: 4.3 - Play SHALL advance through bars at configurable speed
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanPlayReplay))]
+    private async Task PlayReplayAsync()
+    {
+        if (_replayService == null || !IsDataLoaded) return;
+
+        try
+        {
+            IsReplayPlaying = true;
+            _replayService.PlaybackSpeed = PlaybackSpeed;
+            await _replayService.PlayAsync();
+        }
+        catch (Exception ex)
+        {
+            AddLog(LogLevel.Error, $"Replay error: {ex.Message}");
+        }
+        finally
+        {
+            IsReplayPlaying = false;
+        }
+    }
+
+    private bool CanPlayReplay() => IsDataLoaded && !IsReplayPlaying && !IsRunning;
+
+    /// <summary>
+    /// Command to pause replay playback.
+    /// Requirements: 4.4 - Pause SHALL stop advancing
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanPauseReplay))]
+    private void PauseReplay()
+    {
+        if (_replayService == null) return;
+
+        _replayService.Pause();
+        IsReplayPlaying = false;
+    }
+
+    private bool CanPauseReplay() => IsReplayPlaying;
+
+    /// <summary>
+    /// Command to step forward one bar.
+    /// Requirements: 4.5 - StepForward SHALL advance exactly one bar
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanStepReplay))]
+    private void StepForwardReplay()
+    {
+        if (_replayService == null) return;
+
+        var result = _replayService.StepForward();
+        if (result != null)
+        {
+            UpdateReplayState(result);
+        }
+    }
+
+    /// <summary>
+    /// Command to step backward one bar.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanStepReplay))]
+    private void StepBackwardReplay()
+    {
+        if (_replayService == null) return;
+
+        _replayService.StepBackward();
+        ReplayCurrentIndex = _replayService.CurrentIndex;
+        ReplayState = _replayService.State;
+    }
+
+    private bool CanStepReplay() => IsDataLoaded && !IsReplayPlaying && !IsRunning;
+
+    /// <summary>
+    /// Command to reset replay to beginning.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanResetReplay))]
+    private void ResetReplay()
+    {
+        if (_replayService == null) return;
+
+        _replayService.Reset();
+        ReplayCurrentIndex = 0;
+        ReplayState = _replayService.State;
+        ReplayCurrentSignal = Strategy.Signal.None;
+        StatusMessage = "Replay reset";
+    }
+
+    private bool CanResetReplay() => IsDataLoaded && !IsRunning;
+
+    /// <summary>
+    /// Command to seek to a specific position.
+    /// Requirements: 4.8 - Time slider SHALL allow seeking to any position
+    /// </summary>
+    [RelayCommand]
+    private void SeekReplay(int targetIndex)
+    {
+        if (_replayService == null) return;
+
+        _replayService.SeekTo(targetIndex);
+        ReplayCurrentIndex = _replayService.CurrentIndex;
+        ReplayState = _replayService.State;
+    }
+
+    /// <summary>
+    /// Initializes replay with current OHLC data.
+    /// </summary>
+    public void InitializeReplay()
+    {
+        if (_replayService == null || OhlcData == null || OhlcData.Count == 0) return;
+
+        var volumes = VolumeData ?? new List<double>(new double[OhlcData.Count]);
+        _replayService.SetData(OhlcData, volumes);
+        ReplayTotalBars = _replayService.TotalBars;
+        ReplayCurrentIndex = 0;
+        ReplayState = _replayService.State;
+
+        // Notify command state changes
+        PlayReplayCommand.NotifyCanExecuteChanged();
+        PauseReplayCommand.NotifyCanExecuteChanged();
+        StepForwardReplayCommand.NotifyCanExecuteChanged();
+        StepBackwardReplayCommand.NotifyCanExecuteChanged();
+        ResetReplayCommand.NotifyCanExecuteChanged();
+    }
+
+    /// <summary>
+    /// Sets the strategy for replay.
+    /// </summary>
+    public void SetReplayStrategy(IStrategy strategy)
+    {
+        _replayService?.SetStrategy(strategy);
+    }
+
+    private void UpdateReplayState(ReplayStepEventArgs e)
+    {
+        ReplayCurrentIndex = e.BarIndex + 1; // +1 because index is 0-based but display is 1-based
+        ReplayState = e.State;
+        ReplayCurrentTime = e.CurrentBar.DateTime;
+
+        if (e.Trade != null)
+        {
+            ReplayCurrentSignal = e.Trade.Signal;
+            AddLog(LogLevel.Info, $"[{e.Trade.Signal}] @ {e.Trade.Price:F2} - {e.Trade.Reason}");
+        }
+        else
+        {
+            ReplayCurrentSignal = Strategy.Signal.None;
+        }
+    }
+
+    /// <summary>
+    /// Event raised when replay step occurs.
+    /// </summary>
+    public event EventHandler<ReplayStepEventArgs>? OnReplayStepOccurred;
+
     /// <summary>
     /// Sets an external strategy for backtesting.
     /// </summary>
@@ -556,7 +772,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         });
     }
 
-    private void AddLog(LogLevel level, string message)
+    /// <summary>
+    /// Adds a log entry to the log panel.
+    /// </summary>
+    public void AddLog(LogLevel level, string message)
     {
         // Filter by selected log level
         if (level >= SelectedLogLevel)
@@ -583,8 +802,43 @@ public partial class MainViewModel : ObservableObject, IDisposable
             OhlcData = e.OhlcData;
             VolumeData = e.Volumes;
             
+            // Initialize replay with loaded data
+            InitializeReplay();
+            
             // Forward the event to the View
             OnOhlcDataLoaded?.Invoke(this, e);
+        });
+    }
+
+    #endregion
+
+    #region Replay Event Handlers
+
+    private void OnReplayStep(object? sender, ReplayStepEventArgs e)
+    {
+        Application.Current?.Dispatcher.Invoke(() =>
+        {
+            UpdateReplayState(e);
+            OnReplayStepOccurred?.Invoke(this, e);
+        });
+    }
+
+    private void OnReplayCompleted(object? sender, ReplayStateInfo e)
+    {
+        Application.Current?.Dispatcher.Invoke(() =>
+        {
+            IsReplayPlaying = false;
+            ReplayState = e;
+            StatusMessage = $"Replay completed. Final equity: {e.Equity:C2}";
+            AddLog(LogLevel.Info, $"Replay completed with {e.Trades.Count} trades");
+        });
+    }
+
+    private void OnReplayTradeSignal(object? sender, ReplayTradeRecord e)
+    {
+        Application.Current?.Dispatcher.Invoke(() =>
+        {
+            ReplayCurrentSignal = e.Signal;
         });
     }
 
@@ -597,11 +851,28 @@ public partial class MainViewModel : ObservableObject, IDisposable
         LoadDataCommand.NotifyCanExecuteChanged();
         StartBacktestCommand.NotifyCanExecuteChanged();
         StopBacktestCommand.NotifyCanExecuteChanged();
+        PlayReplayCommand.NotifyCanExecuteChanged();
+        PauseReplayCommand.NotifyCanExecuteChanged();
+        StepForwardReplayCommand.NotifyCanExecuteChanged();
+        StepBackwardReplayCommand.NotifyCanExecuteChanged();
+        ResetReplayCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnIsDataLoadedChanged(bool value)
     {
         StartBacktestCommand.NotifyCanExecuteChanged();
+        PlayReplayCommand.NotifyCanExecuteChanged();
+        StepForwardReplayCommand.NotifyCanExecuteChanged();
+        StepBackwardReplayCommand.NotifyCanExecuteChanged();
+        ResetReplayCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnIsReplayPlayingChanged(bool value)
+    {
+        PlayReplayCommand.NotifyCanExecuteChanged();
+        PauseReplayCommand.NotifyCanExecuteChanged();
+        StepForwardReplayCommand.NotifyCanExecuteChanged();
+        StepBackwardReplayCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnSelectedLogLevelChanged(LogLevel value)
@@ -653,7 +924,16 @@ public partial class MainViewModel : ObservableObject, IDisposable
             _backtestService.OnLogReceived -= OnLogReceived;
             _backtestService.OnBacktestCompleted -= OnBacktestCompleted;
             _backtestService.OnOhlcDataLoaded -= OnOhlcDataLoadedHandler;
-            _backtestService.Dispose();
+            
+            // Unsubscribe from replay service events
+            if (_replayService != null)
+            {
+                _replayService.OnReplayStep -= OnReplayStep;
+                _replayService.OnReplayCompleted -= OnReplayCompleted;
+                _replayService.OnTradeSignal -= OnReplayTradeSignal;
+            }
+            
+            // Note: Don't dispose _backtestService as it's managed by DI container
             _disposed = true;
         }
     }

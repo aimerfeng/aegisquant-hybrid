@@ -67,15 +67,16 @@ impl DataPipeline {
         // Convert to LazyFrame for query optimization
         let mut lf = df.lazy();
 
-        // 1. Ensure time order and remove duplicates
+        // 1. Remove duplicates first, then sort by timestamp
+        // Note: unique() doesn't preserve order, so we sort after deduplication
         lf = lf
+            .unique(None, UniqueKeepStrategy::Last)
             .sort(
                 ["timestamp"],
                 SortMultipleOptions::default()
                     .with_order_descending(false)
                     .with_nulls_last(true),
-            )
-            .unique(None, UniqueKeepStrategy::Last);
+            );
 
         // 2. Handle Missing Data (Suspension Filling)
         // Logic: Forward fill price, fill volume with 0

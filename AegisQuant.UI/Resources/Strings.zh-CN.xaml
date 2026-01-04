@@ -123,6 +123,55 @@
     <system:String x:Key="String.Strategy.Trades">交易</system:String>
     <system:String x:Key="String.Strategy.PnL">盈亏</system:String>
     
+    <!-- Replay Controls -->
+    <system:String x:Key="String.Replay.Title">回放控制</system:String>
+    <system:String x:Key="String.Replay.Play">播放</system:String>
+    <system:String x:Key="String.Replay.Pause">暂停</system:String>
+    <system:String x:Key="String.Replay.StepForward">单步前进</system:String>
+    <system:String x:Key="String.Replay.StepBackward">单步后退</system:String>
+    <system:String x:Key="String.Replay.Reset">重置</system:String>
+    <system:String x:Key="String.Replay.Speed">速度:</system:String>
+    <system:String x:Key="String.Replay.Position">位置:</system:String>
+    <system:String x:Key="String.Replay.Time">时间:</system:String>
+    <system:String x:Key="String.Replay.Signal">信号:</system:String>
+    <system:String x:Key="String.Replay.NoSignal">无</system:String>
+    <system:String x:Key="String.Replay.Buy">买入</system:String>
+    <system:String x:Key="String.Replay.Sell">卖出</system:String>
+    
+    <!-- Status Panel -->
+    <system:String x:Key="String.Status.Title">账户状态</system:String>
+    <system:String x:Key="String.Status.Equity">净值</system:String>
+    <system:String x:Key="String.Status.Position">持仓</system:String>
+    <system:String x:Key="String.Status.UnrealizedPnL">浮动盈亏</system:String>
+    <system:String x:Key="String.Status.RealizedPnL">已实现盈亏</system:String>
+    <system:String x:Key="String.Status.CurrentTime">当前时间</system:String>
+    <system:String x:Key="String.Status.CurrentSignal">当前信号</system:String>
+    
+    <!-- Import Wizard -->
+    <system:String x:Key="String.Import.Title">导入数据</system:String>
+    <system:String x:Key="String.Import.Description">选择 CSV 文件并配置列映射</system:String>
+    <system:String x:Key="String.Import.File">文件:</system:String>
+    <system:String x:Key="String.Import.Preview">数据预览 (前 5 行)</system:String>
+    <system:String x:Key="String.Import.SelectFileToPreview">选择文件以预览数据</system:String>
+    <system:String x:Key="String.Import.ColumnMapping">列映射</system:String>
+    <system:String x:Key="String.Import.DateFormat">日期格式:</system:String>
+    <system:String x:Key="String.Import.Import">导入</system:String>
+    <system:String x:Key="String.Import.Importing">导入中...</system:String>
+    
+    <!-- Log Panel -->
+    <system:String x:Key="String.Log.Title">日志</system:String>
+    <system:String x:Key="String.Log.Filter">过滤:</system:String>
+    <system:String x:Key="String.Log.AutoScroll">自动滚动</system:String>
+    <system:String x:Key="String.Log.All">全部</system:String>
+    <system:String x:Key="String.Log.Debug">调试</system:String>
+    <system:String x:Key="String.Log.Info">信息</system:String>
+    <system:String x:Key="String.Log.Warn">警告</system:String>
+    <system:String x:Key="String.Log.Error">错误</system:String>
+    <system:String x:Key="String.Log.Trade">交易</system:String>
+    <system:String x:Key="String.Log.Signal">信号</system:String>
+    <system:String x:Key="String.Log.ExportSuccess">日志导出成功</system:String>
+    <system:String x:Key="String.Log.ExportFailed">日志导出失败</system:String>
+    
     <!-- Strategy Editor -->
     <system:String x:Key="String.Editor.Title">策略编辑器</system:String>
     <system:String x:Key="String.Editor.StrategyType">策略类型</system:String>

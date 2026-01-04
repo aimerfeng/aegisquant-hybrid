@@ -29,6 +29,11 @@ AegisQuant is a high-performance quantitative backtesting and trading system bui
 - 🔄 **Backtest/Live Ready** - Gateway abstraction for seamless switching
 - 🌍 **Multi-Language UI** - English and Chinese support
 - 📈 **Real-Time Charts** - Live equity curve with ScottPlot
+- 🎬 **Hybrid Backtest Mode** - Visual replay with external strategy support (Python/JSON)
+- 🔄 **Multi-Timeframe Cache** - Instant switching between 1m/5m/15m/30m/1h/4h/1d
+- 📝 **Smart Data Import** - Auto-detect CSV column mapping and date formats
+- 🎯 **Trade Markers** - Visual buy/sell signals on candlestick charts
+- 📋 **Strategy Logging** - Real-time signal and execution logs with filtering
 
 ### 🏗️ Architecture
 
@@ -144,6 +149,11 @@ AegisQuant 是一个高性能量化回测与交易系统，采用 **Rust + C# �
 - 🔄 **回测/实盘就绪** - Gateway 抽象层支持无缝切换
 - 🌍 **多语言界面** - 支持中英文切换
 - 📈 **实时图表** - ScottPlot 实时净值曲线
+- 🎬 **混合回测模式** - 可视化回放，支持外部策略 (Python/JSON)
+- 🔄 **多周期缓存** - 1m/5m/15m/30m/1h/4h/1d 瞬时切换
+- 📝 **智能数据导入** - 自动检测 CSV 列映射和日期格式
+- 🎯 **交易标记** - K线图上显示买卖信号
+- 📋 **策略日志** - 实时信号和执行日志，支持过滤
 
 ### 🏗️ 架构
 

@@ -1,0 +1,217 @@
+<UserControl x:Class="AegisQuant.UI.Controls.LogPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="400"
+             Background="{DynamicResource SurfaceBrush}">
+    
+    <UserControl.Resources>
+        <!-- Log level colors -->
+        <SolidColorBrush x:Key="LogDebugBrush" Color="#808080"/>
+        <SolidColorBrush x:Key="LogInfoBrush" Color="#4FC3F7"/>
+        <SolidColorBrush x:Key="LogWarnBrush" Color="#FFB74D"/>
+        <SolidColorBrush x:Key="LogErrorBrush" Color="#EF5350"/>
+        <SolidColorBrush x:Key="LogTradeBrush" Color="#66BB6A"/>
+        <SolidColorBrush x:Key="LogSignalBrush" Color="#AB47BC"/>
+        
+        <Style x:Key="LogLevelStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="MinWidth" Value="50"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Level}" Value="Debug">
+                    <Setter Property="Foreground" Value="{StaticResource LogDebugBrush}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Level}" Value="Info">
+                    <Setter Property="Foreground" Value="{StaticResource LogInfoBrush}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Level}" Value="Warn">
+                    <Setter Property="Foreground" Value="{StaticResource LogWarnBrush}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Level}" Value="Error">
+                    <Setter Property="Foreground" Value="{StaticResource LogErrorBrush}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Level}" Value="Trade">
+                    <Setter Property="Foreground" Value="{StaticResource LogTradeBrush}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Level}" Value="Signal">
+                    <Setter Property="Foreground" Value="{StaticResource LogSignalBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        
+        <Style x:Key="FilterComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Background" Value="{DynamicResource CardBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="Padding" Value="6,3"/>
+            <Setter Property="MinWidth" Value="80"/>
+        </Style>
+        
+        <Style x:Key="LogButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource CardBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource SelectedBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+    
+    <Border Background="{DynamicResource SurfaceBrush}" 
+            BorderBrush="{DynamicResource BorderBrush}" 
+            BorderThickness="1" 
+            CornerRadius="4" 
+            Padding="8">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+            <!-- Header with title and filter -->
+            <Grid Grid.Row="0" Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <TextBlock Grid.Column="0" 
+                           Text="{DynamicResource String.Log.Title}" 
+                           FontWeight="Bold" 
+                           FontSize="14" 
+                           Foreground="{DynamicResource PrimaryTextBrush}"
+                           VerticalAlignment="Center"/>
+                
+                <!-- Level Filter -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <TextBlock Text="{DynamicResource String.Log.Filter}" 
+                               VerticalAlignment="Center" 
+                               Margin="0,0,6,0"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
+                               FontSize="11"/>
+                    <ComboBox x:Name="LevelFilterComboBox" 
+                              Style="{StaticResource FilterComboBoxStyle}"
+                              SelectionChanged="LevelFilterComboBox_SelectionChanged">
+                        <ComboBoxItem Content="All" Tag="All"/>
+                        <ComboBoxItem Content="Debug" Tag="Debug"/>
+                        <ComboBoxItem Content="Info" Tag="Info" IsSelected="True"/>
+                        <ComboBoxItem Content="Warn" Tag="Warn"/>
+                        <ComboBoxItem Content="Error" Tag="Error"/>
+                        <ComboBoxItem Content="Trade" Tag="Trade"/>
+                        <ComboBoxItem Content="Signal" Tag="Signal"/>
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
+            
+            <!-- Log List -->
+            <ListView x:Name="LogListView" 
+                      Grid.Row="1" 
+                      ItemsSource="{Binding FilteredLogEntries}"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      BorderThickness="0" 
+                      Background="Transparent"
+                      VirtualizingPanel.IsVirtualizing="True"
+                      VirtualizingPanel.VirtualizationMode="Recycling">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="Padding" Value="2"/>
+                        <Setter Property="Margin" Value="0"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListViewItem">
+                                    <Border Background="{TemplateBinding Background}" 
+                                            Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="0,1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="55"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <!-- Timestamp -->
+                            <TextBlock Grid.Column="0" 
+                                       Text="{Binding FormattedTime}" 
+                                       FontSize="10" 
+                                       FontFamily="Consolas"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            
+                            <!-- Level -->
+                            <TextBlock Grid.Column="1" 
+                                       Text="{Binding LevelString}" 
+                                       Style="{StaticResource LogLevelStyle}"/>
+                            
+                            <!-- Message -->
+                            <TextBlock Grid.Column="2" 
+                                       Text="{Binding Message}" 
+                                       TextWrapping="Wrap" 
+                                       FontSize="11" 
+                                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+            
+            <!-- Footer with buttons -->
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                <CheckBox x:Name="AutoScrollCheckBox" 
+                          Content="{DynamicResource String.Log.AutoScroll}" 
+                          IsChecked="True"
+                          Foreground="{DynamicResource SecondaryTextBrush}"
+                          VerticalAlignment="Center"
+                          Margin="0,0,12,0"/>
+                <Button x:Name="ClearButton" 
+                        Content="{DynamicResource Clear}" 
+                        Style="{StaticResource LogButtonStyle}"
+                        Click="ClearButton_Click"/>
+                <Button x:Name="ExportButton" 
+                        Content="{DynamicResource Export}" 
+                        Style="{StaticResource LogButtonStyle}"
+                        Click="ExportButton_Click"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

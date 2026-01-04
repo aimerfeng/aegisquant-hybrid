@@ -435,6 +435,403 @@ public struct IndicatorResult
 }
 
 
+// ============================================================================
+// Hybrid Backtest Mode FFI Types (Requirements: 2.8, 13.5)
+// ============================================================================
+
+/// <summary>
+/// Execution event types for hybrid backtest mode.
+/// </summary>
+public static class ExecutionEventType
+{
+    /// <summary>Trade executed</summary>
+    public const int Trade = 0;
+    /// <summary>Order rejected</summary>
+    public const int OrderRejected = 1;
+    /// <summary>Stop-loss triggered</summary>
+    public const int StopTriggered = 2;
+    /// <summary>Take-profit triggered</summary>
+    public const int TakeProfitTriggered = 3;
+}
+
+/// <summary>
+/// Signal types for external strategy integration.
+/// </summary>
+public static class Signal
+{
+    /// <summary>No signal</summary>
+    public const int None = 0;
+    /// <summary>Buy signal</summary>
+    public const int Buy = 1;
+    /// <summary>Sell signal</summary>
+    public const int Sell = 2;
+}
+
+/// <summary>
+/// Order rejection reason codes.
+/// </summary>
+public static class RejectionCode
+{
+    /// <summary>No rejection (order accepted)</summary>
+    public const int None = 0;
+    /// <summary>Insufficient capital for order</summary>
+    public const int InsufficientCapital = 1;
+    /// <summary>Risk limit exceeded</summary>
+    public const int RiskLimitExceeded = 2;
+    /// <summary>Invalid price</summary>
+    public const int InvalidPrice = 3;
+    /// <summary>Invalid quantity</summary>
+    public const int InvalidQuantity = 4;
+    /// <summary>Position limit exceeded</summary>
+    public const int PositionLimit = 5;
+    /// <summary>Order rate throttle exceeded</summary>
+    public const int ThrottleExceeded = 6;
+}
+
+/// <summary>
+/// Execution event structure for hybrid backtest mode.
+/// Returned by ProcessTickWithResult to notify C# of trades,
+/// order rejections, and stop/take-profit triggers.
+/// Matches Rust repr(C) ExecutionEvent struct.
+/// </summary>
+/// <remarks>
+/// Uses "Caller Allocates" pattern - C# provides buffer, Rust writes events.
+/// Memory Model:
+/// - C# allocates ExecutionEvent[] buffer
+/// - Rust writes events into the buffer
+/// - C# reads events and reuses buffer for next call
+/// - NO cross-language memory allocation/deallocation
+/// </remarks>
+[StructLayout(LayoutKind.Sequential)]
+public struct ExecutionEvent
+{
+    /// <summary>Event type: 0=Trade, 1=OrderRejected, 2=StopTriggered, 3=TakeProfitTriggered</summary>
+    public int EventType;
+    /// <summary>Unix timestamp in nanoseconds when event occurred</summary>
+    public long Timestamp;
+    /// <summary>Execution price</summary>
+    public double Price;
+    /// <summary>Execution quantity</summary>
+    public double Quantity;
+    /// <summary>Side: 1=Buy, -1=Sell</summary>
+    public int Side;
+    /// <summary>Order ID (for tracking)</summary>
+    public long OrderId;
+    /// <summary>Realized PnL from this execution (0 if opening position)</summary>
+    public double RealizedPnl;
+
+    /// <summary>
+    /// Gets whether this is a trade event.
+    /// </summary>
+    public readonly bool IsTrade => EventType == ExecutionEventType.Trade;
+
+    /// <summary>
+    /// Gets whether this is a stop-loss trigger event.
+    /// </summary>
+    public readonly bool IsStopTriggered => EventType == ExecutionEventType.StopTriggered;
+
+    /// <summary>
+    /// Gets whether this is a take-profit trigger event.
+    /// </summary>
+    public readonly bool IsTakeProfitTriggered => EventType == ExecutionEventType.TakeProfitTriggered;
+
+    /// <summary>
+    /// Gets whether this is a buy side event.
+    /// </summary>
+    public readonly bool IsBuy => Side == Direction.Buy;
+
+    /// <summary>
+    /// Gets whether this is a sell side event.
+    /// </summary>
+    public readonly bool IsSell => Side == Direction.Sell;
+
+    /// <summary>
+    /// Gets the timestamp as DateTime (UTC).
+    /// </summary>
+    public readonly DateTime TimestampUtc => DateTimeOffset.FromUnixTimeMilliseconds(Timestamp / 1_000_000).UtcDateTime;
+}
+
+/// <summary>
+/// Order result structure returned by PlaceOrder FFI.
+/// Matches Rust repr(C) OrderResult struct.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+public struct OrderResult
+{
+    /// <summary>Whether the order was accepted (1) or rejected (0)</summary>
+    public int Accepted;
+    /// <summary>Order ID assigned by the engine (0 if rejected)</summary>
+    public long OrderId;
+    /// <summary>Fill price (0 if not filled yet or rejected)</summary>
+    public double FillPrice;
+    /// <summary>Fill quantity (0 if not filled yet or rejected)</summary>
+    public double FillQuantity;
+    /// <summary>Rejection reason code (0 if accepted)</summary>
+    public int RejectionCode;
+
+    /// <summary>
+    /// Gets whether the order was accepted.
+    /// </summary>
+    public readonly bool IsAccepted => Accepted == 1;
+
+    /// <summary>
+    /// Gets whether the order was rejected.
+    /// </summary>
+    public readonly bool IsRejected => Accepted == 0 && RejectionCode != AegisQuant.Interop.RejectionCode.None;
+
+    /// <summary>
+    /// Gets the rejection reason as a human-readable string.
+    /// </summary>
+    public readonly string RejectionReason => RejectionCode switch
+    {
+        AegisQuant.Interop.RejectionCode.None => "None",
+        AegisQuant.Interop.RejectionCode.InsufficientCapital => "Insufficient Capital",
+        AegisQuant.Interop.RejectionCode.RiskLimitExceeded => "Risk Limit Exceeded",
+        AegisQuant.Interop.RejectionCode.InvalidPrice => "Invalid Price",
+        AegisQuant.Interop.RejectionCode.InvalidQuantity => "Invalid Quantity",
+        AegisQuant.Interop.RejectionCode.PositionLimit => "Position Limit Exceeded",
+        AegisQuant.Interop.RejectionCode.ThrottleExceeded => "Order Rate Throttle Exceeded",
+        _ => $"Unknown ({RejectionCode})"
+    };
+}
+
+/// <summary>
+/// CSV column mapping configuration for flexible data import.
+/// Allows C# to specify column names and date format for CSV files
+/// with non-standard column names.
+/// Matches Rust repr(C) CsvMapping struct.
+/// </summary>
+/// <remarks>
+/// String fields are fixed-size byte arrays (null-terminated UTF-8).
+/// </remarks>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct CsvMapping
+{
+    /// <summary>Column name for timestamp (e.g., "Date", "Time", "Timestamp")</summary>
+    public fixed byte TimeColumn[32];
+    /// <summary>Column name for price (e.g., "Close", "Price", "Last")</summary>
+    public fixed byte PriceColumn[32];
+    /// <summary>Column name for volume (e.g., "Volume", "Vol", "Qty")</summary>
+    public fixed byte VolumeColumn[32];
+    /// <summary>Column name for open price (optional, empty if not used)</summary>
+    public fixed byte OpenColumn[32];
+    /// <summary>Column name for high price (optional, empty if not used)</summary>
+    public fixed byte HighColumn[32];
+    /// <summary>Column name for low price (optional, empty if not used)</summary>
+    public fixed byte LowColumn[32];
+    /// <summary>Date format string (e.g., "yyyy-MM-dd", "unix", "auto")</summary>
+    public fixed byte DateFormat[32];
+    /// <summary>Whether to skip the first row (header row): 1=skip, 0=don't skip</summary>
+    public int SkipHeader;
+
+    /// <summary>
+    /// Sets the time column name.
+    /// </summary>
+    public void SetTimeColumn(string name)
+    {
+        fixed (byte* dest = TimeColumn)
+        {
+            SetFixedStringInternal(name, dest, 32);
+        }
+    }
+
+    /// <summary>
+    /// Sets the price column name.
+    /// </summary>
+    public void SetPriceColumn(string name)
+    {
+        fixed (byte* dest = PriceColumn)
+        {
+            SetFixedStringInternal(name, dest, 32);
+        }
+    }
+
+    /// <summary>
+    /// Sets the volume column name.
+    /// </summary>
+    public void SetVolumeColumn(string name)
+    {
+        fixed (byte* dest = VolumeColumn)
+        {
+            SetFixedStringInternal(name, dest, 32);
+        }
+    }
+
+    /// <summary>
+    /// Sets the open column name.
+    /// </summary>
+    public void SetOpenColumn(string name)
+    {
+        fixed (byte* dest = OpenColumn)
+        {
+            SetFixedStringInternal(name, dest, 32);
+        }
+    }
+
+    /// <summary>
+    /// Sets the high column name.
+    /// </summary>
+    public void SetHighColumn(string name)
+    {
+        fixed (byte* dest = HighColumn)
+        {
+            SetFixedStringInternal(name, dest, 32);
+        }
+    }
+
+    /// <summary>
+    /// Sets the low column name.
+    /// </summary>
+    public void SetLowColumn(string name)
+    {
+        fixed (byte* dest = LowColumn)
+        {
+            SetFixedStringInternal(name, dest, 32);
+        }
+    }
+
+    /// <summary>
+    /// Sets the date format string.
+    /// </summary>
+    public void SetDateFormat(string format)
+    {
+        fixed (byte* dest = DateFormat)
+        {
+            SetFixedStringInternal(format, dest, 32);
+        }
+    }
+
+    /// <summary>
+    /// Gets the time column name.
+    /// </summary>
+    public readonly string GetTimeColumn()
+    {
+        fixed (byte* ptr = TimeColumn)
+        {
+            return GetFixedString(ptr, 32);
+        }
+    }
+
+    /// <summary>
+    /// Gets the price column name.
+    /// </summary>
+    public readonly string GetPriceColumn()
+    {
+        fixed (byte* ptr = PriceColumn)
+        {
+            return GetFixedString(ptr, 32);
+        }
+    }
+
+    /// <summary>
+    /// Gets the volume column name.
+    /// </summary>
+    public readonly string GetVolumeColumn()
+    {
+        fixed (byte* ptr = VolumeColumn)
+        {
+            return GetFixedString(ptr, 32);
+        }
+    }
+
+    /// <summary>
+    /// Gets the date format string.
+    /// </summary>
+    public readonly string GetDateFormat()
+    {
+        fixed (byte* ptr = DateFormat)
+        {
+            return GetFixedString(ptr, 32);
+        }
+    }
+
+    /// <summary>
+    /// Creates a default CsvMapping with standard column names.
+    /// </summary>
+    public static CsvMapping Default
+    {
+        get
+        {
+            var mapping = new CsvMapping();
+            mapping.SetTimeColumn("timestamp");
+            mapping.SetPriceColumn("price");
+            mapping.SetVolumeColumn("volume");
+            mapping.SetDateFormat("unix");
+            mapping.SkipHeader = 1;
+            return mapping;
+        }
+    }
+
+    private static void SetFixedStringInternal(string value, byte* dest, int maxLen)
+    {
+        // Clear the buffer first
+        for (int i = 0; i < maxLen; i++)
+            dest[i] = 0;
+
+        if (!string.IsNullOrEmpty(value))
+        {
+            var bytes = System.Text.Encoding.UTF8.GetBytes(value);
+            var len = Math.Min(bytes.Length, maxLen - 1);
+            for (int i = 0; i < len; i++)
+                dest[i] = bytes[i];
+        }
+    }
+
+    private static string GetFixedString(byte* ptr, int maxLen)
+    {
+        int len = 0;
+        while (len < maxLen && ptr[len] != 0)
+            len++;
+        return System.Text.Encoding.UTF8.GetString(ptr, len);
+    }
+}
+
+/// <summary>
+/// OHLC (Open-High-Low-Close) bar data for chart display.
+/// Matches Rust repr(C) OhlcBar struct.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+public struct OhlcBar
+{
+    /// <summary>Unix timestamp in nanoseconds (bar open time)</summary>
+    public long Timestamp;
+    /// <summary>Open price</summary>
+    public double Open;
+    /// <summary>High price</summary>
+    public double High;
+    /// <summary>Low price</summary>
+    public double Low;
+    /// <summary>Close price</summary>
+    public double Close;
+    /// <summary>Volume</summary>
+    public double Volume;
+
+    /// <summary>
+    /// Gets the timestamp as DateTime (UTC).
+    /// </summary>
+    public readonly DateTime TimestampUtc => DateTimeOffset.FromUnixTimeMilliseconds(Timestamp / 1_000_000).UtcDateTime;
+
+    /// <summary>
+    /// Gets whether this is a bullish (green) bar.
+    /// </summary>
+    public readonly bool IsBullish => Close >= Open;
+
+    /// <summary>
+    /// Gets whether this is a bearish (red) bar.
+    /// </summary>
+    public readonly bool IsBearish => Close < Open;
+
+    /// <summary>
+    /// Gets the bar range (High - Low).
+    /// </summary>
+    public readonly double Range => High - Low;
+
+    /// <summary>
+    /// Gets the bar body size (|Close - Open|).
+    /// </summary>
+    public readonly double BodySize => Math.Abs(Close - Open);
+}
+
 /// <summary>
 /// Latency statistics structure.
 /// Matches Rust repr(C) LatencyStats struct.

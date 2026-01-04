@@ -123,6 +123,55 @@
     <system:String x:Key="String.Strategy.Trades">Trades</system:String>
     <system:String x:Key="String.Strategy.PnL">PnL</system:String>
     
+    <!-- Replay Controls -->
+    <system:String x:Key="String.Replay.Title">Replay Control</system:String>
+    <system:String x:Key="String.Replay.Play">Play</system:String>
+    <system:String x:Key="String.Replay.Pause">Pause</system:String>
+    <system:String x:Key="String.Replay.StepForward">Step Forward</system:String>
+    <system:String x:Key="String.Replay.StepBackward">Step Backward</system:String>
+    <system:String x:Key="String.Replay.Reset">Reset</system:String>
+    <system:String x:Key="String.Replay.Speed">Speed:</system:String>
+    <system:String x:Key="String.Replay.Position">Position:</system:String>
+    <system:String x:Key="String.Replay.Time">Time:</system:String>
+    <system:String x:Key="String.Replay.Signal">Signal:</system:String>
+    <system:String x:Key="String.Replay.NoSignal">None</system:String>
+    <system:String x:Key="String.Replay.Buy">BUY</system:String>
+    <system:String x:Key="String.Replay.Sell">SELL</system:String>
+    
+    <!-- Status Panel -->
+    <system:String x:Key="String.Status.Title">Account Status</system:String>
+    <system:String x:Key="String.Status.Equity">Equity</system:String>
+    <system:String x:Key="String.Status.Position">Position</system:String>
+    <system:String x:Key="String.Status.UnrealizedPnL">Unrealized P&amp;L</system:String>
+    <system:String x:Key="String.Status.RealizedPnL">Realized P&amp;L</system:String>
+    <system:String x:Key="String.Status.CurrentTime">Current Time</system:String>
+    <system:String x:Key="String.Status.CurrentSignal">Current Signal</system:String>
+    
+    <!-- Import Wizard -->
+    <system:String x:Key="String.Import.Title">Import Data</system:String>
+    <system:String x:Key="String.Import.Description">Select a CSV file and configure column mappings</system:String>
+    <system:String x:Key="String.Import.File">File:</system:String>
+    <system:String x:Key="String.Import.Preview">Data Preview (First 5 Rows)</system:String>
+    <system:String x:Key="String.Import.SelectFileToPreview">Select a file to preview data</system:String>
+    <system:String x:Key="String.Import.ColumnMapping">Column Mapping</system:String>
+    <system:String x:Key="String.Import.DateFormat">Date Format:</system:String>
+    <system:String x:Key="String.Import.Import">Import</system:String>
+    <system:String x:Key="String.Import.Importing">Importing...</system:String>
+    
+    <!-- Log Panel -->
+    <system:String x:Key="String.Log.Title">Log</system:String>
+    <system:String x:Key="String.Log.Filter">Filter:</system:String>
+    <system:String x:Key="String.Log.AutoScroll">Auto-scroll</system:String>
+    <system:String x:Key="String.Log.All">All</system:String>
+    <system:String x:Key="String.Log.Debug">Debug</system:String>
+    <system:String x:Key="String.Log.Info">Info</system:String>
+    <system:String x:Key="String.Log.Warn">Warning</system:String>
+    <system:String x:Key="String.Log.Error">Error</system:String>
+    <system:String x:Key="String.Log.Trade">Trade</system:String>
+    <system:String x:Key="String.Log.Signal">Signal</system:String>
+    <system:String x:Key="String.Log.ExportSuccess">Log exported successfully</system:String>
+    <system:String x:Key="String.Log.ExportFailed">Failed to export log</system:String>
+    
     <!-- Strategy Editor -->
     <system:String x:Key="String.Editor.Title">Strategy Editor</system:String>
     <system:String x:Key="String.Editor.StrategyType">Strategy Type</system:String>

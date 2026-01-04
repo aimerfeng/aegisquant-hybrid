@@ -221,22 +221,17 @@ public class IntegrationTests
     }
 
     /// <summary>
-    /// Integration test: OrderRequest with long symbol (truncation).
+    /// Integration test: OrderRequest with long symbol (throws exception).
     /// </summary>
     [Fact]
-    public void OrderRequest_LongSymbol_ShouldTruncate()
+    public void OrderRequest_LongSymbol_ShouldThrowException()
     {
         // Arrange
         var order = new OrderRequest();
         var longSymbol = "VERYLONGSYMBOLNAME123"; // > 15 chars
 
-        // Act
-        order.SetSymbol(longSymbol);
-        var symbol = order.GetSymbol();
-
-        // Assert - should be truncated to 15 chars
-        Assert.Equal(15, symbol.Length);
-        Assert.Equal("VERYLONGSYMBOLN", symbol);
+        // Act & Assert - should throw ArgumentException for symbols too long
+        Assert.Throws<ArgumentException>(() => order.SetSymbol(longSymbol));
     }
 
     /// <summary>

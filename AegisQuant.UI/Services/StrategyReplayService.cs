@@ -1,6 +1,8 @@
 using ScottPlot;
 using AegisQuant.UI.Strategy;
 using AegisQuant.UI.Models;
+using AegisQuant.UI.Services.Interfaces;
+using Interop = AegisQuant.Interop;
 
 namespace AegisQuant.UI.Services;
 
@@ -11,7 +13,7 @@ public class TradeRecord
 {
     public int BarIndex { get; set; }
     public DateTime Time { get; set; }
-    public Signal Signal { get; set; }
+    public Strategy.Signal Signal { get; set; }
     public double Price { get; set; }
     public double Quantity { get; set; }
     public string Reason { get; set; } = string.Empty;
@@ -44,6 +46,8 @@ public class ReplayEventArgs : EventArgs
 
 /// <summary>
 /// 策略回放服务 - 支持逐K线回放，查看策略买卖点
+/// Refactored to support DI injection of IMarketDataStore and EngineWrapper.
+/// Requirements: 4.2, 4.5, 4.7, 4.8, 4.11
 /// </summary>
 public class StrategyReplayService
 {
@@ -53,10 +57,20 @@ public class StrategyReplayService
     private StrategyContext _context = new();
     private ReplayState _state = new();
     
+    // Injected dependencies (Requirements: 4.2)
+    private readonly IMarketDataStore? _marketDataStore;
+    private Interop.EngineWrapper? _engine;
+    
     // 回放控制
     private int _currentIndex = 0;
     private bool _isPlaying = false;
     private CancellationTokenSource? _playbackCts;
+    
+    // Track the last synced engine index for state consistency (Requirements: 4.11)
+    private int _lastSyncedEngineIndex = -1;
+    
+    // Visible window size for chart updates (Requirements: 4.8)
+    private const int DefaultVisibleWindowSize = 1000;
     
     // 回放速度（毫秒/K线）
     public int PlaybackSpeed { get; set; } = 500;
@@ -66,6 +80,11 @@ public class StrategyReplayService
     
     // 每次交易数量
     public double TradeQuantity { get; set; } = 100;
+    
+    /// <summary>
+    /// Gets or sets the visible window size for chart updates.
+    /// </summary>
+    public int VisibleWindowSize { get; set; } = DefaultVisibleWindowSize;
 
     /// <summary>
     /// 回放进度事件
@@ -81,6 +100,11 @@ public class StrategyReplayService
     /// 交易信号事件
     /// </summary>
     public event EventHandler<TradeRecord>? OnTradeSignal;
+    
+    /// <summary>
+    /// Event raised when visible chart data should be updated.
+    /// </summary>
+    public event EventHandler<List<OHLC>>? OnVisibleDataChanged;
 
     /// <summary>
     /// 当前回放索引
@@ -101,6 +125,54 @@ public class StrategyReplayService
     /// 当前回放状态
     /// </summary>
     public ReplayState State => _state;
+    
+    /// <summary>
+    /// Gets the injected market data store (may be null if not injected).
+    /// </summary>
+    public IMarketDataStore? MarketDataStore => _marketDataStore;
+    
+    /// <summary>
+    /// Gets the injected engine wrapper (may be null if not injected).
+    /// </summary>
+    public Interop.EngineWrapper? Engine => _engine;
+    
+    /// <summary>
+    /// Gets whether the engine state is synchronized with the current replay position.
+    /// Requirements: 4.11
+    /// </summary>
+    public bool IsEngineSynced => _engine != null && _lastSyncedEngineIndex == _currentIndex - 1;
+
+    /// <summary>
+    /// Default constructor for backward compatibility.
+    /// </summary>
+    public StrategyReplayService()
+    {
+        _marketDataStore = null;
+        _engine = null;
+    }
+    
+    /// <summary>
+    /// Constructor with dependency injection.
+    /// Requirements: 4.2 - Inject IMarketDataStore and EngineWrapper
+    /// </summary>
+    /// <param name="marketDataStore">Market data store for OHLC data access</param>
+    /// <param name="engine">Engine wrapper for state synchronization</param>
+    public StrategyReplayService(IMarketDataStore marketDataStore, Interop.EngineWrapper engine)
+    {
+        _marketDataStore = marketDataStore ?? throw new ArgumentNullException(nameof(marketDataStore));
+        _engine = engine ?? throw new ArgumentNullException(nameof(engine));
+    }
+    
+    /// <summary>
+    /// Sets the engine wrapper for state synchronization.
+    /// Useful when engine is created after replay service.
+    /// </summary>
+    /// <param name="engine">Engine wrapper instance</param>
+    public void SetEngine(Interop.EngineWrapper engine)
+    {
+        _engine = engine ?? throw new ArgumentNullException(nameof(engine));
+        _lastSyncedEngineIndex = -1; // Reset sync state
+    }
 
     /// <summary>
     /// 设置数据
@@ -110,6 +182,30 @@ public class StrategyReplayService
         _ohlcData = ohlcData;
         _volumes = volumes;
         Reset();
+    }
+    
+    /// <summary>
+    /// Loads data from the injected MarketDataStore for a specific timeframe.
+    /// Requirements: 4.2 - Integration with IMarketDataStore
+    /// </summary>
+    /// <param name="timeframe">Timeframe to load (e.g., "1m", "5m", "1h")</param>
+    public void LoadFromMarketDataStore(string timeframe = "1m")
+    {
+        if (_marketDataStore == null)
+        {
+            throw new InvalidOperationException("MarketDataStore not injected. Use SetData() instead or inject via constructor.");
+        }
+        
+        var ohlcData = _marketDataStore.GetOhlcData(timeframe);
+        if (ohlcData.Count == 0)
+        {
+            throw new InvalidOperationException($"No OHLC data available for timeframe '{timeframe}'");
+        }
+        
+        // For now, we don't have volume data from MarketDataStore, use empty volumes
+        var volumes = new List<double>(new double[ohlcData.Count]);
+        
+        SetData(ohlcData, volumes);
     }
 
     /// <summary>
@@ -128,6 +224,7 @@ public class StrategyReplayService
     {
         Stop();
         _currentIndex = 0;
+        _lastSyncedEngineIndex = -1; // Reset engine sync state
         _state = new ReplayState
         {
             CurrentBarIndex = 0,
@@ -142,6 +239,7 @@ public class StrategyReplayService
 
     /// <summary>
     /// 单步前进
+    /// Requirements: 4.5 - StepForward SHALL advance exactly one bar
     /// </summary>
     public ReplayEventArgs? StepForward()
     {
@@ -151,6 +249,9 @@ public class StrategyReplayService
         var bar = _ohlcData[_currentIndex];
         var volume = _currentIndex < _volumes.Count ? _volumes[_currentIndex] : 0;
 
+        // Sync engine state if engine is available (Requirements: 4.11)
+        SyncEngineState(_currentIndex);
+
         // 更新策略上下文
         UpdateContext(bar, volume);
 
@@ -159,7 +260,7 @@ public class StrategyReplayService
         if (_strategy != null)
         {
             var signal = _strategy.OnBar(_context);
-            if (signal != Signal.None)
+            if (signal != Strategy.Signal.None)
             {
                 trade = ExecuteTrade(signal, bar);
             }
@@ -191,6 +292,43 @@ public class StrategyReplayService
 
         return eventArgs;
     }
+    
+    /// <summary>
+    /// Synchronizes the Rust engine state with the current replay position.
+    /// Requirements: 4.11 - Maintain Rust_Engine state consistency
+    /// </summary>
+    /// <param name="targetIndex">Target bar index to sync to</param>
+    private void SyncEngineState(int targetIndex)
+    {
+        if (_engine == null)
+            return;
+            
+        // If already synced to this position, nothing to do
+        if (_lastSyncedEngineIndex >= targetIndex)
+            return;
+            
+        try
+        {
+            // Process tick for the current bar to update engine state
+            var bar = _ohlcData[targetIndex];
+            var volume = targetIndex < _volumes.Count ? _volumes[targetIndex] : 0;
+            
+            var tick = new Interop.Tick
+            {
+                Timestamp = new DateTimeOffset(bar.DateTime).ToUnixTimeMilliseconds() * 1_000_000,
+                Price = bar.Close,
+                Volume = volume
+            };
+            
+            _engine.ProcessTick(tick);
+            _lastSyncedEngineIndex = targetIndex;
+        }
+        catch (Exception)
+        {
+            // Engine sync failed, continue without sync
+            // This allows replay to work even if engine is not properly initialized
+        }
+    }
 
     /// <summary>
     /// 单步后退
@@ -212,17 +350,154 @@ public class StrategyReplayService
 
     /// <summary>
     /// 跳转到指定位置
+    /// Requirements: 4.8, 4.11 - SeekTo with FastForwardTo optimization
     /// </summary>
     public void SeekTo(int barIndex)
     {
-        if (barIndex < 0 || barIndex >= _ohlcData.Count)
+        // Valid range is 0 to _ohlcData.Count (inclusive)
+        // barIndex == _ohlcData.Count means "at the end of data"
+        if (barIndex < 0 || barIndex > _ohlcData.Count)
             return;
 
+        // Use optimized seek if engine is available
+        if (_engine != null)
+        {
+            SeekToOptimized(barIndex);
+        }
+        else
+        {
+            // Fallback to sequential replay
+            SeekToSequential(barIndex);
+        }
+    }
+    
+    /// <summary>
+    /// Optimized seek using FastForwardTo.
+    /// Requirements: 4.8, 4.11 - Use FastForwardTo for acceleration
+    /// </summary>
+    /// <param name="barIndex">Target bar index</param>
+    private void SeekToOptimized(int barIndex)
+    {
+        if (_engine == null)
+        {
+            SeekToSequential(barIndex);
+            return;
+        }
+        
+        try
+        {
+            if (barIndex < _currentIndex)
+            {
+                // Seeking backward: must reset and fast-forward
+                // Reset internal state
+                _currentIndex = 0;
+                _lastSyncedEngineIndex = -1;
+                _state = new ReplayState
+                {
+                    CurrentBarIndex = 0,
+                    Equity = InitialCapital,
+                    Position = 0,
+                    AvgPrice = 0,
+                    UnrealizedPnL = 0,
+                    RealizedPnL = 0
+                };
+                _context.Reset();
+                
+                // Use FastForwardTo to quickly advance engine state
+                if (barIndex > 0)
+                {
+                    _engine.FastForwardTo(barIndex);
+                    _lastSyncedEngineIndex = barIndex - 1;
+                }
+            }
+            else if (barIndex > _currentIndex)
+            {
+                // Seeking forward: fast-forward from current position
+                _engine.FastForwardTo(barIndex);
+                _lastSyncedEngineIndex = barIndex - 1;
+            }
+            
+            // Update current index
+            _currentIndex = barIndex;
+            _state.CurrentBarIndex = barIndex;
+            
+            // Update visible chart data (only visible range)
+            UpdateVisibleChartData(barIndex);
+            
+            // Try to get account status from engine
+            try
+            {
+                var status = _engine.GetAccountStatus();
+                _state.Equity = status.Equity;
+                _state.RealizedPnL = status.TotalPnl;
+            }
+            catch
+            {
+                // Engine status not available, use calculated values
+            }
+        }
+        catch (Exception)
+        {
+            // FastForwardTo failed, fallback to sequential
+            SeekToSequential(barIndex);
+        }
+    }
+    
+    /// <summary>
+    /// Sequential seek (fallback when engine is not available).
+    /// </summary>
+    /// <param name="barIndex">Target bar index</param>
+    private void SeekToSequential(int barIndex)
+    {
         Reset();
         while (_currentIndex < barIndex)
         {
             StepForward();
         }
+    }
+    
+    /// <summary>
+    /// Updates the visible chart data for the current position.
+    /// Requirements: 4.8 - Only update visible range
+    /// </summary>
+    /// <param name="currentPosition">Current replay position</param>
+    private void UpdateVisibleChartData(int currentPosition)
+    {
+        // Get visible bars (last N bars up to current position)
+        // currentPosition represents the number of bars processed
+        var visibleBars = _ohlcData
+            .Take(currentPosition)
+            .TakeLast(VisibleWindowSize)
+            .ToList();
+        
+        OnVisibleDataChanged?.Invoke(this, visibleBars);
+    }
+    
+    /// <summary>
+    /// Gets the visible OHLC data for the current replay position.
+    /// Requirements: 4.7 - Chart SHALL only show data up to current replay position
+    /// </summary>
+    /// <returns>List of visible OHLC bars</returns>
+    public List<OHLC> GetVisibleData()
+    {
+        // CurrentIndex represents the number of bars processed (0-indexed position after last processed bar)
+        // So we take exactly CurrentIndex bars (indices 0 to CurrentIndex-1)
+        return _ohlcData
+            .Take(_currentIndex)
+            .TakeLast(VisibleWindowSize)
+            .ToList();
+    }
+    
+    /// <summary>
+    /// Gets all OHLC data up to the current replay position.
+    /// Requirements: 4.7 - Chart SHALL only show data up to current replay position
+    /// </summary>
+    /// <returns>List of OHLC bars from start to current position</returns>
+    public List<OHLC> GetDataUpToCurrentPosition()
+    {
+        // CurrentIndex represents the number of bars processed (0-indexed position after last processed bar)
+        // After N StepForward() calls, CurrentIndex = N, and we return bars 0 to N-1 (N bars total)
+        return _ohlcData.Take(_currentIndex).ToList();
     }
 
     /// <summary>
@@ -300,7 +575,7 @@ public class StrategyReplayService
             if (_strategy != null)
             {
                 var signal = _strategy.OnBar(_context);
-                if (signal != Signal.None)
+                if (signal != Strategy.Signal.None)
                 {
                     ExecuteTrade(signal, bar);
                 }
@@ -346,7 +621,7 @@ public class StrategyReplayService
         _context.UpdateAccount(accountStatus);
     }
 
-    private TradeRecord ExecuteTrade(Signal signal, OHLC bar)
+    private TradeRecord ExecuteTrade(Strategy.Signal signal, OHLC bar)
     {
         var trade = new TradeRecord
         {
@@ -359,7 +634,7 @@ public class StrategyReplayService
 
         switch (signal)
         {
-            case Signal.Buy:
+            case Strategy.Signal.Buy:
                 if (_state.Position <= 0)
                 {
                     // 平空仓
@@ -377,7 +652,7 @@ public class StrategyReplayService
                 }
                 break;
 
-            case Signal.Sell:
+            case Strategy.Signal.Sell:
                 if (_state.Position >= 0)
                 {
                     // 平多仓
@@ -395,7 +670,7 @@ public class StrategyReplayService
                 }
                 break;
 
-            case Signal.CloseLong:
+            case Strategy.Signal.CloseLong:
                 if (_state.Position > 0)
                 {
                     _state.RealizedPnL += (bar.Close - _state.AvgPrice) * _state.Position;
@@ -405,7 +680,7 @@ public class StrategyReplayService
                 }
                 break;
 
-            case Signal.CloseShort:
+            case Strategy.Signal.CloseShort:
                 if (_state.Position < 0)
                 {
                     _state.RealizedPnL += (_state.AvgPrice - bar.Close) * Math.Abs(_state.Position);

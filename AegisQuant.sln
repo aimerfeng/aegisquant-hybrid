@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34330.188
@@ -8,6 +8,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AegisQuant.Interop.Tests", "AegisQuant.Interop.Tests\AegisQuant.Interop.Tests.csproj", "{B2C3D4E5-F6A7-8901-BCDE-F12345678901}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AegisQuant.UI", "AegisQuant.UI\AegisQuant.UI.csproj", "{C3D4E5F6-A7B8-9012-CDEF-123456789012}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AegisQuant.UI.Tests", "AegisQuant.UI.Tests\AegisQuant.UI.Tests.csproj", "{F7CD3528-859A-4724-AC84-5D3DAF5DCA78}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,10 @@ Global
 		{C3D4E5F6-A7B8-9012-CDEF-123456789012}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C3D4E5F6-A7B8-9012-CDEF-123456789012}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C3D4E5F6-A7B8-9012-CDEF-123456789012}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F7CD3528-859A-4724-AC84-5D3DAF5DCA78}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7CD3528-859A-4724-AC84-5D3DAF5DCA78}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7CD3528-859A-4724-AC84-5D3DAF5DCA78}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7CD3528-859A-4724-AC84-5D3DAF5DCA78}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
