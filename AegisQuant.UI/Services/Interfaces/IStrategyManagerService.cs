@@ -56,7 +56,16 @@ public interface IStrategyManagerService : IDisposable
     /// <summary>
     /// Sets a strategy directly.
     /// </summary>
-    void SetStrategy(IStrategy strategy);
+    /// <param name="strategy">The strategy to set</param>
+    /// <param name="takeOwnership">If true, the manager will dispose the strategy when replaced or unloaded</param>
+    void SetStrategy(IStrategy strategy, bool takeOwnership = true);
+    
+    /// <summary>
+    /// Detaches the current strategy without disposing it.
+    /// Use this when transferring ownership of the strategy to another component.
+    /// </summary>
+    /// <returns>The detached strategy, or null if no strategy was loaded</returns>
+    IStrategy? DetachStrategy();
     
     /// <summary>
     /// Processes a tick with the current strategy.

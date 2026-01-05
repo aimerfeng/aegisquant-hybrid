@@ -450,9 +450,9 @@ public partial class MainWindow : Window
 
     private void LoadStrategyButton_Click(object sender, RoutedEventArgs e)
     {
-        // Create a temporary StrategyManagerService for the loader window
-        // since it needs the concrete type for file loading
-        using var tempManager = new StrategyManagerService();
+        // Create a StrategyManagerService for the loader window
+        // NOTE: Do NOT use 'using' here - the strategy must survive after the window closes
+        var tempManager = new StrategyManagerService();
         var loaderWindow = new StrategyLoaderWindow(tempManager)
         {
             Owner = this
@@ -479,6 +479,11 @@ public partial class MainWindow : Window
 
             // Notify view model about strategy change
             _viewModel?.SetExternalStrategy(_currentStrategy);
+        }
+        else
+        {
+            // Only dispose the manager if no strategy was loaded
+            tempManager.Dispose();
         }
     }
 
@@ -671,6 +676,18 @@ public partial class MainWindow : Window
 
     private void Window_Closing(object? sender, CancelEventArgs e)
     {
+        // 保存布局
+        try
+        {
+            // 注意：当前MainWindow没有使用AvalonDock的DockingManager
+            // 如果将来添加了DockingManager，可以在这里保存布局
+            // LayoutService.Instance.SaveLayout(DockingManager);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to save layout: {ex.Message}");
+        }
+        
         // Cancel display update consumer
         _displayUpdateCts?.Cancel();
         _displayUpdateCts?.Dispose();
@@ -691,6 +708,29 @@ public partial class MainWindow : Window
             _viewModel.EquityCurve.CollectionChanged -= EquityCurve_CollectionChanged;
             _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
             _viewModel.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// 窗口加载完成后初始化布局
+    /// </summary>
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        
+        // 尝试加载保存的布局
+        try
+        {
+            // 注意：当前MainWindow没有使用AvalonDock的DockingManager
+            // 如果将来添加了DockingManager，可以在这里加载布局
+            // if (LayoutService.Instance.HasSavedLayout())
+            // {
+            //     LayoutService.Instance.LoadLayout(DockingManager);
+            // }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to load layout: {ex.Message}");
         }
     }
 }

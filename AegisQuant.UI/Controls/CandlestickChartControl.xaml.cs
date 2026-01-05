@@ -7,6 +7,7 @@ using AegisQuant.UI.Services;
 using AegisQuant.UI.ViewModels;
 using AegisQuant.UI.Models;
 using AegisQuant.UI.Strategy;
+using AegisQuant.UI.Controls.DrawingTools;
 
 namespace AegisQuant.UI.Controls;
 
@@ -15,6 +16,10 @@ public partial class CandlestickChartControl : UserControl
     private Crosshair? _mainCrosshair;
     private Crosshair? _volumeCrosshair;
     private Crosshair? _macdCrosshair;
+
+    // 绘图工具管理器
+    private readonly DrawingToolManager _drawingManager = new();
+    private bool _isDrawingMode = false;
 
     // 原始tick数据
     private List<(DateTime time, double price, double volume)> _rawTicks = new();
@@ -73,8 +78,146 @@ public partial class CandlestickChartControl : UserControl
         InitializeComponent();
         InitializeCharts();
         SetupMouseTracking();
+        SetupDrawingTools();
         DataContextChanged += OnDataContextChanged;
     }
+
+    /// <summary>
+    /// 设置绘图工具事件
+    /// </summary>
+    private void SetupDrawingTools()
+    {
+        // 绘图工具状态变化
+        _drawingManager.ToolChanged += (s, tool) =>
+        {
+            _isDrawingMode = tool != DrawingToolType.None;
+            if (DrawingStatusText != null)
+            {
+                DrawingStatusText.Text = tool == DrawingToolType.None ? "" : $"绘图模式: {GetToolName(tool)}";
+            }
+        };
+
+        // 绘图完成
+        _drawingManager.DrawingAdded += (s, drawing) =>
+        {
+            MainChart.Refresh();
+            if (DrawingStatusText != null)
+            {
+                DrawingStatusText.Text = $"已添加 {GetToolName(drawing.Type)}";
+            }
+        };
+
+        // 主图鼠标事件用于绘图
+        MainChart.MouseLeftButtonDown += OnMainChartMouseDown;
+        MainChart.MouseLeftButtonUp += OnMainChartMouseUp;
+        MainChart.MouseRightButtonDown += OnMainChartRightClick;
+    }
+
+    private string GetToolName(DrawingToolType type) => type switch
+    {
+        DrawingToolType.TrendLine => "趋势线",
+        DrawingToolType.HorizontalLine => "水平线",
+        DrawingToolType.VerticalLine => "垂直线",
+        DrawingToolType.Rectangle => "矩形",
+        DrawingToolType.FibonacciRetracement => "斐波那契",
+        DrawingToolType.Text => "文本",
+        _ => "选择"
+    };
+
+    /// <summary>
+    /// 绘图工具选择
+    /// </summary>
+    private void DrawingTool_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is RadioButton rb && rb.Tag is string toolName)
+        {
+            var tool = toolName switch
+            {
+                "TrendLine" => DrawingToolType.TrendLine,
+                "HorizontalLine" => DrawingToolType.HorizontalLine,
+                "VerticalLine" => DrawingToolType.VerticalLine,
+                _ => DrawingToolType.None
+            };
+            _drawingManager.SetTool(tool);
+        }
+    }
+
+    /// <summary>
+    /// 清除所有绘图
+    /// </summary>
+    private void ClearDrawings_Click(object sender, RoutedEventArgs e)
+    {
+        _drawingManager.ClearAll(MainChart.Plot);
+        MainChart.Refresh();
+        if (DrawingStatusText != null)
+        {
+            DrawingStatusText.Text = "已清除所有绘图";
+        }
+    }
+
+    /// <summary>
+    /// 主图鼠标按下 - 开始绘图
+    /// </summary>
+    private void OnMainChartMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (!_isDrawingMode || _drawingManager.CurrentTool == DrawingToolType.None) return;
+
+        var position = e.GetPosition(MainChart);
+        var pixel = new Pixel((float)position.X, (float)position.Y);
+        var coordinates = MainChart.Plot.GetCoordinates(pixel);
+
+        _drawingManager.StartDrawing(coordinates.X, coordinates.Y, MainChart.Plot);
+        MainChart.Refresh();
+    }
+
+    /// <summary>
+    /// 主图鼠标释放 - 完成绘图
+    /// </summary>
+    private void OnMainChartMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!_drawingManager.IsDrawing) return;
+
+        var position = e.GetPosition(MainChart);
+        var pixel = new Pixel((float)position.X, (float)position.Y);
+        var coordinates = MainChart.Plot.GetCoordinates(pixel);
+
+        _drawingManager.FinishDrawing(coordinates.X, coordinates.Y);
+        MainChart.Refresh();
+    }
+
+    /// <summary>
+    /// 主图右键点击 - 取消绘图或删除选中的绘图对象
+    /// </summary>
+    private void OnMainChartRightClick(object sender, MouseButtonEventArgs e)
+    {
+        if (_drawingManager.IsDrawing)
+        {
+            _drawingManager.CancelDrawing(MainChart.Plot);
+            MainChart.Refresh();
+            return;
+        }
+
+        // 检查是否点击了绘图对象
+        var position = e.GetPosition(MainChart);
+        var pixel = new Pixel((float)position.X, (float)position.Y);
+        var coordinates = MainChart.Plot.GetCoordinates(pixel);
+
+        var hitDrawing = _drawingManager.HitTest(coordinates.X, coordinates.Y);
+        if (hitDrawing != null)
+        {
+            _drawingManager.RemoveDrawing(hitDrawing, MainChart.Plot);
+            MainChart.Refresh();
+            if (DrawingStatusText != null)
+            {
+                DrawingStatusText.Text = "已删除绘图对象";
+            }
+        }
+    }
+
+    /// <summary>
+    /// 获取绘图管理器（供外部访问）
+    /// </summary>
+    public DrawingToolManager DrawingManager => _drawingManager;
 
     private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
@@ -211,6 +354,13 @@ public partial class CandlestickChartControl : UserControl
         var position = e.GetPosition(chart);
         var pixel = new Pixel((float)position.X, (float)position.Y);
         var coordinates = chart.Plot.GetCoordinates(pixel);
+
+        // 如果正在绘图，更新绘图对象
+        if (_drawingManager.IsDrawing && chart == MainChart)
+        {
+            _drawingManager.UpdateDrawing(coordinates.X, coordinates.Y);
+            MainChart.Refresh();
+        }
 
         UpdateCrosshairs(coordinates.X);
         UpdateCrosshairInfo((int)Math.Round(coordinates.X));
@@ -463,13 +613,17 @@ public partial class CandlestickChartControl : UserControl
 
     private void RenderMainChart()
     {
+        // 保存当前的坐标轴范围，用于恢复
+        var currentXLimits = MainChart.Plot.Axes.GetLimits();
+        bool hasExistingLimits = _ohlcData.Count > 0 && currentXLimits.Left != currentXLimits.Right;
+        
         MainChart.Plot.Clear();
         if (_ohlcData.Count == 0) return;
 
-        // K线
+        // K线 - 始终显示
         var candlestick = MainChart.Plot.Add.Candlestick(_ohlcData);
 
-        // 均线 - 根据复选框状态
+        // 均线 - 根据复选框状态叠加显示
         bool showMa5 = Ma5Check?.IsChecked == true;
         bool showMa10 = Ma10Check?.IsChecked == true;
         bool showMa20 = Ma20Check?.IsChecked == true;
@@ -477,6 +631,7 @@ public partial class CandlestickChartControl : UserControl
         bool showBoll = BollCheck?.IsChecked == true;
         bool showMarkers = TradeMarkersCheck?.IsChecked == true;
 
+        // 添加指标线条 - 与K线叠加显示
         if (showMa5 && _ma5.Count > 0) AddLine(_ma5, "#FFD700");
         if (showMa10 && _ma10.Count > 0) AddLine(_ma10, "#FF69B4");
         if (showMa20 && _ma20.Count > 0) AddLine(_ma20, "#00CED1");
@@ -513,7 +668,18 @@ public partial class CandlestickChartControl : UserControl
         _mainCrosshair.IsVisible = false;
         _mainCrosshair.LineColor = ScottPlot.Color.FromHex("#666666");
 
-        MainChart.Plot.Axes.AutoScale();
+        // 恢复之前的坐标轴范围，保持用户的视图位置
+        if (hasExistingLimits)
+        {
+            MainChart.Plot.Axes.SetLimitsX(currentXLimits.Left, currentXLimits.Right);
+            // 重新计算Y轴范围以适应可见数据
+            AutoScaleYAxis();
+        }
+        else
+        {
+            MainChart.Plot.Axes.AutoScale();
+        }
+        
         MainChart.Refresh();
     }
 

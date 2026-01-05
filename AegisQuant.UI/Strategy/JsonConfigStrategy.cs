@@ -59,7 +59,7 @@ public class JsonConfigStrategy : IStrategy
             // Calculate all indicators
             CalculateIndicators(context);
 
-            // Set up condition parser variables
+            // Set up condition parser variables (this also saves previous values for crossover detection)
             SetupConditionVariables(context);
 
             // Evaluate buy condition
@@ -84,9 +84,10 @@ public class JsonConfigStrategy : IStrategy
 
             return Signal.None;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             // Log error and return None on any exception
+            System.Diagnostics.Debug.WriteLine($"Strategy error: {ex.Message}");
             return Signal.None;
         }
     }
@@ -101,6 +102,12 @@ public class JsonConfigStrategy : IStrategy
             if (value.HasValue)
             {
                 _indicatorValues[indicator.Name] = value.Value;
+            }
+            else
+            {
+                // Set to 0 if indicator cannot be calculated (insufficient data)
+                // This allows conditions to still be evaluated
+                _indicatorValues[indicator.Name] = 0;
             }
         }
     }

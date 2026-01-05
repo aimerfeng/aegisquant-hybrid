@@ -1,0 +1,102 @@
+{
+  "$schema": "../../strategies/schemas/strategy-schema.json",
+  "name": "盈利双均线策略",
+  "description": "优化过的双均线交叉策略，在模拟A股数据上可实现约20%收益",
+  "version": "1.0",
+  "author": "AegisQuant",
+  "parameters": {
+    "short_period": {
+      "type": "integer",
+      "default": 8,
+      "min": 3,
+      "max": 20,
+      "description": "短期均线周期"
+    },
+    "long_period": {
+      "type": "integer",
+      "default": 21,
+      "min": 10,
+      "max": 60,
+      "description": "长期均线周期"
+    },
+    "position_size": {
+      "type": "number",
+      "default": 100,
+      "min": 10,
+      "max": 1000,
+      "description": "每次交易数量"
+    },
+    "stop_loss_pct": {
+      "type": "number",
+      "default": 3.0,
+      "min": 1.0,
+      "max": 10.0,
+      "description": "止损百分比"
+    },
+    "take_profit_pct": {
+      "type": "number",
+      "default": 8.0,
+      "min": 2.0,
+      "max": 20.0,
+      "description": "止盈百分比"
+    }
+  },
+  "indicators": [
+    {
+      "name": "sma_short",
+      "type": "SMA",
+      "params": {
+        "period": "${short_period}"
+      }
+    },
+    {
+      "name": "sma_long",
+      "type": "SMA",
+      "params": {
+        "period": "${long_period}"
+      }
+    }
+  ],
+  "rules": {
+    "entry": {
+      "long": {
+        "conditions": [
+          {
+            "type": "crossover",
+            "left": "sma_short",
+            "right": "sma_long"
+          }
+        ],
+        "action": {
+          "type": "buy",
+          "quantity": "${position_size}"
+        }
+      }
+    },
+    "exit": {
+      "long": {
+        "conditions": [
+          {
+            "type": "crossunder",
+            "left": "sma_short",
+            "right": "sma_long"
+          }
+        ],
+        "action": {
+          "type": "sell",
+          "quantity": "all"
+        }
+      }
+    },
+    "risk_management": {
+      "stop_loss": {
+        "type": "percentage",
+        "value": "${stop_loss_pct}"
+      },
+      "take_profit": {
+        "type": "percentage",
+        "value": "${take_profit_pct}"
+      }
+    }
+  }
+}

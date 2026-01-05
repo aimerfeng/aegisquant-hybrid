@@ -431,7 +431,8 @@ public class BacktestService : IBacktestService
     /// <param name="strategy">The strategy to use</param>
     public void SetExternalStrategy(IStrategy strategy)
     {
-        _strategyManager.SetStrategy(strategy);
+        // Don't take ownership - the caller (MainWindow) owns the strategy
+        _strategyManager.SetStrategy(strategy, takeOwnership: false);
         _useExternalStrategy = true;
         
         // Requirements: 1.2 - Auto-select Visual mode for external strategies
@@ -828,21 +829,49 @@ public class BacktestService : IBacktestService
                     evt.Side));
             }
             
-            // 3. Update strategy context (Requirements: 2.7)
+            // 3. Update strategy context BEFORE calling strategy (Requirements: 2.7)
+            // This ensures the strategy has access to the latest account state
             _strategyContext.UpdateTick(tick);
             _strategyContext.AddOhlc(bar);
+            
+            // Update account status - critical for strategy decisions
             try
             {
-                _strategyContext.UpdateAccount(_engine!.GetAccountStatus());
+                var accountStatus = _engine!.GetAccountStatus();
+                _strategyContext.UpdateAccount(accountStatus);
+                
+                // Update position info from account status
+                // Note: Position tracking is derived from account status
+                _strategyContext.Position.Quantity = accountStatus.PositionCount;
+                _strategyContext.Position.UnrealizedPnL = accountStatus.TotalPnl;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                RaiseLog(LogLevel.Warn, $"Failed to update account status at bar {i}: {ex.Message}");
+            }
             
             // 4. Call external strategy (Requirements: 1.6, 2.2)
             Strategy.Signal signal = Strategy.Signal.None;
             if (_useExternalStrategy && _strategyManager.CurrentStrategy != null)
             {
                 barInvocationCount++;
-                signal = _strategyManager.ProcessTick(_strategyContext);
+                try
+                {
+                    // Call OnBar for OHLC data (more appropriate than OnTick)
+                    signal = _strategyManager.CurrentStrategy.OnBar(_strategyContext);
+                    
+                    // Debug: Log indicator values and account state periodically
+                    if (i % 20 == 0 && i >= 20)
+                    {
+                        var sma5 = _strategyContext.Indicators.SMA(5);
+                        var sma20 = _strategyContext.Indicators.SMA(20);
+                        RaiseLog(LogLevel.Debug, $"Bar {i}: Price={bar.Close:F2}, SMA5={sma5:F2}, SMA20={sma20:F2}, Equity={_strategyContext.Account.Equity:F2}, Position={_strategyContext.Position.Quantity:F2}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    RaiseLog(LogLevel.Error, $"Strategy error at bar {i}: {ex.Message}\n{ex.StackTrace}");
+                }
             }
             
             // 5. Place order if signal generated (Requirements: 1.7, 2.3, 2.4)

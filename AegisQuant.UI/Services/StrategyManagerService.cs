@@ -49,6 +49,7 @@ public class StrategyErrorEventArgs : EventArgs
 public class StrategyManagerService : IStrategyManagerService
 {
     private IStrategy? _currentStrategy;
+    private bool _ownsCurrentStrategy = true;
     private readonly List<StrategyInfo> _recentStrategies;
     private readonly JsonStrategyLoader _jsonLoader;
     private readonly PythonStrategyLoader _pythonLoader;
@@ -176,20 +177,44 @@ public class StrategyManagerService : IStrategyManagerService
     {
         if (_currentStrategy != null)
         {
-            _currentStrategy.Dispose();
+            if (_ownsCurrentStrategy)
+            {
+                _currentStrategy.Dispose();
+            }
             _currentStrategy = null;
+            _ownsCurrentStrategy = true;
         }
+    }
+
+    /// <summary>
+    /// Detaches the current strategy without disposing it.
+    /// Use this when transferring ownership of the strategy to another component.
+    /// </summary>
+    /// <returns>The detached strategy, or null if no strategy was loaded</returns>
+    public IStrategy? DetachStrategy()
+    {
+        var strategy = _currentStrategy;
+        _currentStrategy = null;
+        _ownsCurrentStrategy = true;
+        return strategy;
     }
 
     /// <summary>
     /// Sets a strategy directly (without loading from file).
     /// </summary>
     /// <param name="strategy">The strategy to set</param>
-    public void SetStrategy(IStrategy strategy)
+    /// <param name="takeOwnership">If true, the manager will dispose the strategy when replaced or unloaded. 
+    /// If false, the caller retains ownership and is responsible for disposal.</param>
+    public void SetStrategy(IStrategy strategy, bool takeOwnership = true)
     {
-        // Dispose previous strategy
-        _currentStrategy?.Dispose();
+        // Dispose previous strategy only if we owned it
+        if (_ownsCurrentStrategy)
+        {
+            _currentStrategy?.Dispose();
+        }
+        
         _currentStrategy = strategy;
+        _ownsCurrentStrategy = takeOwnership;
 
         // Create strategy info
         var info = new StrategyInfo
@@ -364,9 +389,13 @@ public class StrategyManagerService : IStrategyManagerService
 
     private void SetCurrentStrategy(IStrategy strategy, string? filePath)
     {
-        // Dispose previous strategy
-        _currentStrategy?.Dispose();
+        // Dispose previous strategy only if we owned it
+        if (_ownsCurrentStrategy)
+        {
+            _currentStrategy?.Dispose();
+        }
         _currentStrategy = strategy;
+        _ownsCurrentStrategy = true; // We own strategies loaded from files
 
         // Create strategy info
         var info = new StrategyInfo

@@ -15,6 +15,79 @@
 
 ---
 
+## 🚀 AegisQuant 2.0 预告 | Coming Soon
+
+<div align="center">
+
+![Tauri](https://img.shields.io/badge/Tauri-FFC131?style=for-the-badge&logo=tauri&logoColor=black)
+![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+
+</div>
+
+### 🎯 2.0 架构升级计划
+
+AegisQuant 2.0 将采用全新的 **Tauri + React** 架构，实现真正的跨平台支持！
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    React Frontend                        │
+│  • TypeScript + React 18                                │
+│  • TailwindCSS + Shadcn/UI                              │
+│  • TradingView Lightweight Charts                       │
+│  • Zustand 状态管理                                      │
+└─────────────────────────┬───────────────────────────────┘
+                          │ Tauri IPC
+┌─────────────────────────▼───────────────────────────────┐
+│                 Tauri Backend (Rust)                     │
+│  • 原生系统集成                                          │
+│  • 文件系统访问                                          │
+│  • 系统托盘 & 通知                                       │
+└─────────────────────────┬───────────────────────────────┘
+                          │ Direct Call
+┌─────────────────────────▼───────────────────────────────┐
+│                 Rust Core Engine                         │
+│  • 复用现有 aegisquant-core                             │
+│  • 高性能回测引擎                                        │
+│  • 策略执行 & 风控                                       │
+└─────────────────────────────────────────────────────────┘
+```
+
+### ✨ 2.0 新特性预览
+
+| 特性 | 1.x (WPF) | 2.0 (Tauri) |
+|------|-----------|-------------|
+| 跨平台 | ❌ Windows Only | ✅ Windows/macOS/Linux |
+| 安装包大小 | ~150MB | ~15MB |
+| 启动速度 | 3-5s | <1s |
+| 内存占用 | ~200MB | ~50MB |
+| 图表库 | ScottPlot | TradingView Charts |
+| 主题 | 暗色/亮色 | 自定义主题系统 |
+| 插件系统 | C#/Python | WASM 插件 |
+| 实时数据 | WebSocket | WebSocket + SSE |
+
+### 🗓️ 开发路线图
+
+- [x] **v1.0** - WPF 基础版本 ✅
+- [x] **v1.5** - 混合回测模式 + 外部策略支持 ✅
+- [ ] **v2.0-alpha** - Tauri 框架搭建 (Q1 2026)
+- [ ] **v2.0-beta** - 核心功能迁移 (Q2 2026)
+- [ ] **v2.0** - 正式发布 (Q3 2026)
+
+### 🔧 技术栈对比
+
+| 层级 | 1.x | 2.0 |
+|------|-----|-----|
+| 前端框架 | WPF (XAML) | React 18 |
+| 状态管理 | MVVM | Zustand |
+| 样式 | ResourceDictionary | TailwindCSS |
+| 图表 | ScottPlot | TradingView Lightweight |
+| 后端 | C# Interop | Tauri (Rust) |
+| 核心引擎 | Rust FFI | Rust (直接调用) |
+| 打包 | MSIX | Tauri Bundle |
+
+---
+
 ## English
 
 ### 🎯 Overview
@@ -34,6 +107,8 @@ AegisQuant is a high-performance quantitative backtesting and trading system bui
 - 📝 **Smart Data Import** - Auto-detect CSV column mapping and date formats
 - 🎯 **Trade Markers** - Visual buy/sell signals on candlestick charts
 - 📋 **Strategy Logging** - Real-time signal and execution logs with filtering
+- 🖊️ **Drawing Tools** - Trend lines, horizontal/vertical lines on charts
+- 🐍 **Python Strategy** - Write strategies in Python with full indicator support
 
 ### 🏗️ Architecture
 
@@ -112,8 +187,16 @@ aegisquant-hybrid/
 │   ├── Views/                # XAML views
 │   ├── ViewModels/           # MVVM view models
 │   ├── Models/               # Business logic
+│   ├── Controls/             # Custom controls
+│   │   └── DrawingTools/     # Chart drawing tools
+│   ├── Strategy/             # Strategy system
+│   │   └── Loaders/          # Strategy loaders
 │   ├── Resources/            # i18n resources
 │   └── Services/             # Application services
+├── strategies/               # Strategy examples
+│   └── examples/             # JSON/Python strategies
+├── test_samples/             # Test data & strategies
+│   └── profitable_strategy/  # Profitable strategy demo
 └── AegisQuant.Interop.Tests/ # Integration tests
 ```
 
@@ -154,6 +237,8 @@ AegisQuant 是一个高性能量化回测与交易系统，采用 **Rust + C# �
 - 📝 **智能数据导入** - 自动检测 CSV 列映射和日期格式
 - 🎯 **交易标记** - K线图上显示买卖信号
 - 📋 **策略日志** - 实时信号和执行日志，支持过滤
+- 🖊️ **绘图工具** - 趋势线、水平线、垂直线绘制
+- 🐍 **Python 策略** - 支持 Python 编写策略，完整指标支持
 
 ### 🏗️ 架构
 
@@ -232,8 +317,16 @@ aegisquant-hybrid/
 │   ├── Views/                # XAML 视图
 │   ├── ViewModels/           # MVVM 视图模型
 │   ├── Models/               # 业务逻辑
+│   ├── Controls/             # 自定义控件
+│   │   └── DrawingTools/     # 图表绘图工具
+│   ├── Strategy/             # 策略系统
+│   │   └── Loaders/          # 策略加载器
 │   ├── Resources/            # 国际化资源
 │   └── Services/             # 应用服务
+├── strategies/               # 策略示例
+│   └── examples/             # JSON/Python 策略
+├── test_samples/             # 测试数据和策略
+│   └── profitable_strategy/  # 盈利策略演示
 └── AegisQuant.Interop.Tests/ # 集成测试
 ```
 
@@ -258,5 +351,7 @@ MIT License
 <div align="center">
 
 **Made with ❤️ by [aimerfeng](https://github.com/aimerfeng)**
+
+⭐ Star this repo if you find it useful!
 
 </div>

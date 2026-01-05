@@ -189,7 +189,10 @@ public partial class StrategyLoaderWindow : Window
             LoadButton.IsEnabled = false;
             LoadButton.Content = "Loading...";
 
-            LoadedStrategy = await _strategyManager.LoadFromFileAsync(_selectedFilePath);
+            await _strategyManager.LoadFromFileAsync(_selectedFilePath);
+            // Detach the strategy to transfer ownership to the caller
+            // This prevents the strategy from being disposed when the manager is disposed
+            LoadedStrategy = _strategyManager.DetachStrategy();
             DialogResult = true;
             Close();
         }

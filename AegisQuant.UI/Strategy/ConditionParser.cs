@@ -38,15 +38,13 @@ public class ConditionParser
     }
 
     /// <summary>
-    /// Clears all variables.
+    /// Clears all variables and resets state.
+    /// Call this when starting a new backtest or resetting the strategy.
     /// </summary>
     public void Clear()
     {
         _previousValues.Clear();
-        foreach (var kvp in _variables)
-        {
-            _previousValues[kvp.Key] = kvp.Value;
-        }
+        _variables.Clear();
     }
 
     /// <summary>
